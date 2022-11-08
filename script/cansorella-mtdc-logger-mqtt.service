@@ -1,9 +1,9 @@
 [Unit]
-Description=can-ltdc-logger-mqtt
+Description=cansorella-mtdc-logger-mqtt
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/can-ltdc-logger-mqtt
+ExecStart=/usr/local/bin/cansorella
 Restart=always
 
 [Install]
