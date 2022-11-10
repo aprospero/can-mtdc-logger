@@ -11,6 +11,8 @@
 
 #include "ctrl/scbi.h"
 
+typedef void (*compute_CAN_msg) (struct can_frame *frame_rd);
+
 struct scbi_handle
 {
   int soc;
@@ -59,10 +61,98 @@ static int scbi_send(struct scbi_handle * hnd, struct can_frame *frame)
 }
 #endif
 
+static const char* format_raw_CAN_data (struct can_frame *frame_rd)
+{
+  static char xf[64 * 3] = "";
+  char tm[4] = "";
+  for (int a = 0; a < frame_rd->can_dlc && a < sizeof(xf) / (sizeof(tm) - 1); a++)
+  {
+    sprintf (tm, " %02x", frame_rd->data[a]);
+    strncat (xf, tm, sizeof(tm));
+  }
+  return xf;
+}
+
+static void scbi_compute_error (struct can_frame *frame_rd)
+{
+  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
+  fprintf (stderr, "ERROR: CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data: 0x%s.\n", addi->address_id,
+           addi->scbi_id.prog, addi->scbi_id.sender, addi->scbi_id.func, addi->scbi_id.prot, addi->scbi_id.msg,
+           addi->scbi_id.err ? " ERR" : "", addi->scbi_id.fff ? " FFF" : "", addi->scbi_id.rtr ? " RTR" : "", frame_rd->len,
+           format_raw_CAN_data (frame_rd));
+}
+
+static void scbi_compute_datalogger (struct can_frame *frame_rd)
+{
+  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
+  union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->data[0];
+  switch (addi->scbi_id.msg)
+  {
+    case MSG_REQUEST:
+      fprintf (stderr, "Datalogger requests not supported yet.\n");
+      break;
+    case MSG_RESERVE:
+      fprintf (stderr, "Datalogger reserve msgs not supported yet.\n");
+      break;
+    case MSG_RESPONSE:
+      switch (addi->scbi_id.func)
+      {
+        case DLF_SENSOR:
+          fprintf (stdout, "Sensor %u -> %u.\n", msg->sensor.id, msg->sensor.value);
+          break;
+        case DLF_RELAY:
+          fprintf (stdout, "Relay %u -> %u.\n", msg->relay.id, msg->relay.is_on);
+          break;
+        case DLG_OVERVIEW:
+          fprintf (stdout, "Overview %u-%u -> %uh - %ukWh.\n", msg->overview.id, msg->overview.type, msg->overview.hours,
+                   msg->overview.heat_yield);
+          break;
+        case DLF_UNDEFINED:
+        case DLG_HYDRAULIC_PROGRAM:
+        case DLG_ERROR_MESSAGE:
+        case DLG_PARAM_MONITORING:
+        case DLG_STATISTIC:
+        case DLG_HYDRAULIC_CONFIG:
+          fprintf (stdout, "Datalogger function 0x%02X not supported yet.\n", addi->scbi_id.func);
+          break;
+
+      }
+      break;
+    case MSG_ERROR:
+      scbi_compute_error (frame_rd);
+      break;
+  }
+
+}
+
+static void scbi_compute_format0 (struct can_frame *frame_rd)
+{
+  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
+  switch (addi->scbi_id.prog)
+  {
+    case PRG_DATALOGGER_MONITOR:
+      scbi_compute_datalogger (frame_rd);
+      break;
+    case PRG_CONTROLLER:
+    case PRG_REMOTESENSOR:
+    case PRG_DATALOGGER_NAMEDSENSORS:
+    case PRG_HCC:
+    case PRG_AVAILABLERESOURCES:
+    case PRG_PARAMETERSYNCCONFIG:
+    case PRG_ROOMSYNC:
+    case PRG_MSGLOG:
+    case PRG_CBCS:
+      fprintf (stderr, "Program not supported: 0x%02X.\n", addi->scbi_id.prog);
+      break;
+  }
+
+}
+
 /* this is just an example, run in a thread */
 void scbi_update (struct scbi_handle *hnd)
 {
   struct can_frame frame_rd;
+  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd.can_id;
   int recvbytes = 0;
   hnd->read_can_port = 1;
   while (hnd->read_can_port)
@@ -82,20 +172,16 @@ void scbi_update (struct scbi_handle *hnd)
         recvbytes = read (hnd->soc, &frame_rd, sizeof(struct can_frame));
         if (recvbytes)
         {
-          time_t timestamp_sec = (time_t) 0;
-          char xf[255] = "";
-          int a;
-          time (&timestamp_sec);
-
-          for (a = 0; a < frame_rd.can_dlc; a++)
+          switch (addi->scbi_id.prot)
           {
-            char tm[255] = "";
-            sprintf (tm, "%s %02x", xf, frame_rd.data[a]);
-            sprintf (xf, "%s", tm);
+            case CAN_FORMAT_0     : scbi_compute_format0 (&frame_rd);                                    break; /* CAN Msgs size <= 8 */
+            case CAN_FORMAT_BULK  : fprintf (stderr, "Bulk format not supported yet.\n");                break; /* CAN Msgs size >  8 */
+            case CAN_FORMAT_UPDATE: fprintf (stderr, "Updates via CAN not supported yet.\n");            break; /* CAN Msg transmitting firmware update */
+            default:                fprintf (stderr, "Unknown protocol: 0x%02X.\n", addi->scbi_id.prot); break;
           }
-          fprintf (stderr, "id = %x, dlc = %d, data = 0x%s\n", frame_rd.can_id, frame_rd.can_dlc, xf);
+#if 0
           // DLG Sensor 0x01
-          if (frame_rd.can_id == 0x90019f80 && frame_rd.can_dlc == 5)
+          if (frame_rd.can_id == 0x00019f80 && frame_rd.can_dlc == 5)
           {
             char sensor[255] = "";
             int val = frame_rd.data[2] * 256 + frame_rd.data[1];
@@ -187,7 +273,7 @@ void scbi_update (struct scbi_handle *hnd)
           else if (frame_rd.can_id == 0x90079f80 && frame_rd.can_dlc == 8)
           // DLG Overview 0x07
           {
-            printf ("DLG_OVERVIEW XX : %x %x %x\n", frame_rd.data[0], frame_rd.data[1], frame_rd.data[2]);
+            fprintf (stdout, "DLG_OVERVIEW XX : %x %x %x\n", frame_rd.data[0], frame_rd.data[1], frame_rd.data[2]);
             int val = frame_rd.data[5] * 256 + frame_rd.data[4];
             if (frame_rd.data[0] == 0xa0 && frame_rd.data[1] == 0)
             {
@@ -219,6 +305,7 @@ void scbi_update (struct scbi_handle *hnd)
              }
              */
           }
+#endif
           fflush (stdout);
           fflush (stderr);
         }
