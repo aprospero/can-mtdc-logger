@@ -10,6 +10,7 @@
 #include <time.h>
 
 #include "ctrl/scbi.h"
+#include "tool/logger.h"
 
 typedef void (*compute_CAN_msg) (struct can_frame *frame_rd);
 
@@ -83,7 +84,7 @@ static const char* format_raw_CAN_data (struct can_frame *frame_rd)
 static void scbi_print_CAN_frame (enum log_level ll, const char * msg_type, const char * txt, struct can_frame *frame_rd)
 {
   union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
-  fprintf (stderr, "ERROR: CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data: 0x%s.\n", addi->address_id,
+  log_push(ll, "(%s) %s: CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data:%s.", msg_type, txt, addi->address_id,
            addi->scbi_id.prog, addi->scbi_id.client, addi->scbi_id.func, addi->scbi_id.prot, addi->scbi_id.msg,
            addi->scbi_id.flg_err ? " ERR" : "", addi->scbi_id.flg_eff ? " EFF" : "", addi->scbi_id.flg_rtr ? " RTR" : "", frame_rd->len,
            format_raw_CAN_data (frame_rd));
@@ -96,23 +97,26 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *
   switch (addi->scbi_id.msg)
   {
     case CAN_MSG_REQUEST:
-      fprintf (stderr, "Datalogger requests not supported yet.\n");
+      LOG_INFO("Datalogger requests not supported yet.");
       break;
     case CAN_MSG_RESERVE:
-      fprintf (stderr, "Datalogger reserve msgs not supported yet.\n");
+      LOG_INFO("Datalogger reserve msgs not supported yet.");
       break;
     case CAN_MSG_RESPONSE:
       switch (addi->scbi_id.func)
       {
         case DLF_SENSOR:
-          fprintf (stdout, "Sensor %u -> %u.\n", msg->sensor.id, msg->sensor.value);
+          LOG_EVENT("SENSOR%u -> %u.", msg->dlg.sensor.id, msg->dlg.sensor.value);
           break;
         case DLF_RELAY:
-          fprintf (stdout, "Relay %u -> %u.\n", msg->relay.id, msg->relay.is_on);
+          LOG_EVENT("RELAY%u -> %u (0x%02X/0x%02X).", msg->dlg.relay.id, msg->dlg.relay.value, msg->dlg.relay.exfunc[0], msg->dlg.relay.exfunc[1]);
           break;
         case DLG_OVERVIEW:
-          fprintf (stdout, "Overview %u-%u -> %uh - %ukWh.\n", msg->overview.id, msg->overview.type, msg->overview.hours,
-                   msg->overview.heat_yield);
+         char temp[255];
+
+          snprintf (temp, sizeof(temp), "overview %u-%u (%u) -> %uh - %ukWh.", msg->dlg.oview.type, msg->dlg.oview.id, msg->dlg.oview.udo,
+                    msg->dlg.oview.hours, msg->dlg.oview.heat_yield);
+          log_push(LL_DEBUG,"    %-35.35s - (%s)", temp, format_raw_CAN_data (frame_rd));
           break;
         case DLF_UNDEFINED:
         case DLG_HYDRAULIC_PROGRAM:
@@ -120,7 +124,7 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *
         case DLG_PARAM_MONITORING:
         case DLG_STATISTIC:
         case DLG_HYDRAULIC_CONFIG:
-          fprintf (stdout, "Datalogger function 0x%02X not supported yet.\n", addi->scbi_id.func);
+          LOG_INFO("Datalogger function 0x%02X not supported yet.", addi->scbi_id.func);
           break;
 
       }
@@ -146,7 +150,7 @@ static void scbi_compute_format0 (struct scbi_handle *hnd, struct can_frame *fra
     case PRG_ROOMSYNC:
     case PRG_MSGLOG:
     case PRG_CBCS:
-      fprintf (stderr, "Program not supported: 0x%02X.\n", addi->scbi_id.prog);
+      LOG_INFO("Program not supported: 0x%02X.", addi->scbi_id.prog);
       break;
   }
 
@@ -182,10 +186,18 @@ void scbi_update (struct scbi_handle *hnd)
           {
             switch (addi->scbi_id.prot)
             {
-              case CAN_PROTO_FORMAT_0     : scbi_compute_format0 (hnd, &frame_rd);                                    break; /* CAN Msgs size <= 8 */
-              case CAN_PROTO_FORMAT_BULK  : fprintf (stderr, "Bulk format not supported yet.\n");                break; /* CAN Msgs size >  8 */
-              case CAN_PROTO_FORMAT_UPDATE: fprintf (stderr, "Updates via CAN not supported yet.\n");            break; /* CAN Msg transmitting firmware update */
-              default:                fprintf (stderr, "Unknown protocol: 0x%02X.\n", addi->scbi_id.prot); break;
+              case CAN_PROTO_FORMAT_0:
+                scbi_compute_format0 (hnd, &frame_rd);
+                break; /* CAN Msgs size <= 8 */
+              case CAN_PROTO_FORMAT_BULK:
+                LOG_INFO("Bulk format not supported yet.");
+                break; /* CAN Msgs size >  8 */
+              case CAN_PROTO_FORMAT_UPDATE:
+                LOG_INFO("Updates via CAN not supported yet.");
+                break; /* CAN Msg transmitting firmware update */
+              default:
+                LOG_INFO("Unknown protocol: 0x%02X.", addi->scbi_id.prot);
+                break;
             }
           }
           fflush (stdout);

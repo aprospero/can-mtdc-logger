@@ -40,6 +40,11 @@
 			<locationURI>copy_PARENT/code/main.c</locationURI>
 		</link>
 		<link>
+			<name>code/tool</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
 			<name>code/ctrl/scbi.c</name>
 			<type>1</type>
 			<locationURI>copy_PARENT/code/ctrl/scbi.c</locationURI>
@@ -48,6 +53,16 @@
 			<name>code/ctrl/scbi.h</name>
 			<type>1</type>
 			<locationURI>copy_PARENT/code/ctrl/scbi.h</locationURI>
+		</link>
+		<link>
+			<name>code/tool/logger.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/code/tool/logger.c</locationURI>
+		</link>
+		<link>
+			<name>code/tool/logger.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/code/tool/logger.h</locationURI>
 		</link>
 	</linkedResources>
 	<variableList>
