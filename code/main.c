@@ -7,7 +7,7 @@
 
 int main(void)
 {
-	struct scbi_handle * scbi = scbi_open(NULL, "can0");
+	struct scbi_handle * scbi = scbi_open("can0");
 
 	union scbi_address_id id;
 	scbi_update(scbi);
