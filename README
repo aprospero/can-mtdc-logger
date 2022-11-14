@@ -1,9 +1,8 @@
-This tool allows monitoring several values from th following device:
--Austria Email AG - ECO SWIFT 800 PZR
--SOREL LTDC
+This tool allows propagating several values via MQTT from the following device:
+
+- SOREL MTDCv5
 
 Other devices may work as well.
 
 CAN addresses are taken from SOREL CAN BUS Interface (SCBI) documentation.
 
-See image for wiring.
