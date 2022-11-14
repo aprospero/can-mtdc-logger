@@ -7,30 +7,30 @@ struct scbi_handle;
 
 enum scbi_protocol
 {
-	CAN_FORMAT_0      = 0x00,   /* CAN Msgs size <= 8 */
-	CAN_FORMAT_BULK   = 0x01,   /* CAN Msgs size >  8 */
-	CAN_FORMAT_UPDATE = 0x02    /* CAN Msg transmitting firmware update */
+	CAN_PROTO_FORMAT_0      = 0x00,   /* CAN Msgs size <= 8 */
+	CAN_PROTO_FORMAT_BULK   = 0x01,   /* CAN Msgs size >  8 */
+	CAN_PROTO_FORMAT_UPDATE = 0x02    /* CAN Msg transmitting firmware update */
 };
 
 enum scbi_msg_type
 {
-  MSG_REQUEST  = 0x00,
-  MSG_RESERVE  = 0x01,
-  MSG_RESPONSE = 0x02,
-  MSG_ERROR    = 0x03
+  CAN_MSG_REQUEST  = 0x00,
+  CAN_MSG_RESERVE  = 0x01,
+  CAN_MSG_RESPONSE = 0x02,
+  CAN_MSG_ERROR    = 0x03
 };
 
 
 struct scbi_id_format
 {
   uint8_t prog;
-  uint8_t sender;
+  uint8_t client;
   uint8_t func;
   uint8_t prot:3;
   uint8_t msg:2;
-  uint8_t err:1;
-  uint8_t rtr:1;
-  uint8_t fff:1;
+  uint8_t flg_err:1;
+  uint8_t flg_rtr:1;
+  uint8_t flg_eff:1;
 } __attribute__((packed));
 
 
@@ -40,15 +40,15 @@ union scbi_address_id
   struct scbi_id_format  scbi_id;
 };
 
-/* CAN_FORMAT_0 protocol definitions */
 
-enum scbi_prog_type
+
+enum scbi_prog_type          /* CAN_FORMAT_0 protocol definitions */
 {
   PRG_CONTROLLER              = 0x0B,
   PRG_DATALOGGER_MONITOR      = 0x80,
   PRG_REMOTESENSOR            = 0x83,
   PRG_DATALOGGER_NAMEDSENSORS = 0x84, /* REMOTESENSOR  (for compatibility) */
-  PRG_HCC                     = 0x85,
+  PRG_HCC                     = 0x85, /* heating circuit ctrl */
   PRG_AVAILABLERESOURCES      = 0x8C,
   PRG_PARAMETERSYNCCONFIG     = 0x90,
   PRG_ROOMSYNC                = 0x91,
@@ -56,7 +56,7 @@ enum scbi_prog_type
   PRG_CBCS                    = 0x95
 };
 
-enum scbi_dlg_function_type
+enum scbi_dlg_function_type   /* PRG_DATALOGGER_MONITOR related functions */
 {
   DLF_UNDEFINED            = 0x00,
   DLF_SENSOR               = 0x01,
@@ -99,7 +99,7 @@ struct scbi_dlg_relay_msg
 {
   uint8_t id;
   uint8_t mode;
-  uint8_t is_on;
+  uint8_t value;
   uint8_t exfunc[2];
 } __attribute__((packed));
 
@@ -160,8 +160,9 @@ enum scbi_dlg_relay_ext_func
 
 struct scbi_dlg_overview_msg
 {
-   uint8_t  id:5;
+   uint8_t  udo:5;
    uint8_t  type:3;
+   uint8_t  id;
    uint16_t hours;
    uint32_t heat_yield;
 } __attribute__((packed));
@@ -176,14 +177,18 @@ enum scbi_dlg_overview_type
   DOT_STATUS = 0x06
 };
 
+union scbi_data_logger_msg
+{
+  struct scbi_dlg_overview_msg oview;
+  struct scbi_dlg_sensor_msg   sensor;
+  struct scbi_dlg_relay_msg    relay;
+};
 
 
 union scbi_msg_content
 {
-    uint8_t                      raw[8];
-    struct scbi_dlg_sensor_msg   sensor;
-    struct scbi_dlg_relay_msg    relay;
-    struct scbi_dlg_overview_msg overview;
+  uint8_t                      raw[8];
+  union scbi_data_logger_msg   dlg;
 };
 
 
