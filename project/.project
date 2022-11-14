@@ -45,6 +45,11 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>code/ctrl/com</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
 			<name>code/ctrl/scbi.c</name>
 			<type>1</type>
 			<locationURI>copy_PARENT/code/ctrl/scbi.c</locationURI>
@@ -63,6 +68,16 @@
 			<name>code/tool/logger.h</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/code/tool/logger.h</locationURI>
+		</link>
+		<link>
+			<name>code/ctrl/com/mqtt.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/code/ctrl/com/mqtt.c</locationURI>
+		</link>
+		<link>
+			<name>code/ctrl/com/mqtt.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/code/ctrl/com/mqtt.h</locationURI>
 		</link>
 	</linkedResources>
 	<variableList>

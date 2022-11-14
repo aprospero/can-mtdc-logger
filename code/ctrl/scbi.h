@@ -300,8 +300,7 @@ union scbi_msg_content
 
 
 
-
-struct scbi_handle * scbi_open(struct scbi_handle * hnd, const char * port);
+struct scbi_handle * scbi_init(const char * port, void * broker);
 void                 scbi_update(struct scbi_handle * hnd);
 int                  scbi_close(struct scbi_handle * hnd);
 

@@ -10,17 +10,56 @@
 #include <time.h>
 
 #include "ctrl/scbi.h"
+#include "ctrl/com/mqtt.h"
 #include "tool/logger.h"
+
+const char * entity_name[2][4][2] =
+{
+  {
+      { "collector", "" },
+      { "storage",   "" },
+      { "unused1",   "" },
+      { "unused2",   "" }
+  },
+  {
+      { "Pump"   , "PWM"     },
+      { "unused1", "unused1" },
+      { "unused2", "unused2" },
+      { "unused3", "unused3" }
+  }
+};
+
+#define ENTITY_MAX_ID 1
+
+enum scbi_entity_type
+{
+  ETT_SENSOR,
+  ETT_RELAY,
+  ETT_RELAY_EXT
+};
+
+const char * entity[] = {
+    "sensor",
+    "device"
+};
+
+static void publish(struct mqtt_handle * broker, enum scbi_entity_type type, unsigned int id, int value)
+{
+  int is_ext = type == ETT_RELAY_EXT;
+  int type_id = is_ext ? ETT_RELAY : type;
+  mqtt_publish(broker, entity[type], entity_name[type_id][id][is_ext ? 1 : 0], value);
+}
 
 typedef void (*compute_CAN_msg) (struct can_frame *frame_rd);
 
 struct scbi_handle
 {
-  int soc;
-  int read_can_port;
+  int                  soc;
+  int                  read_can_port;
+  struct mqtt_handle * broker;
 };
 
-struct scbi_handle * scbi_init (const char *port)
+struct scbi_handle * scbi_init (const char *port, void * broker)
 {
   struct ifreq ifr;
   struct sockaddr_can addr;
@@ -49,6 +88,7 @@ struct scbi_handle * scbi_init (const char *port)
     free(hnd);
     return NULL;
   }
+  hnd->broker = broker;
   return hnd;
 }
 
@@ -139,12 +179,19 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *
       {
         case DLF_SENSOR:
           LOG_EVENT("SENSOR%u -> %u.", msg->dlg.sensor.id, msg->dlg.sensor.value);
+          publish(hnd->broker, ETT_SENSOR, msg->dlg.sensor.id, msg->dlg.sensor.value);
           break;
         case DLF_RELAY:
-          LOG_EVENT("RELAY%u -> %u (0x%02X/0x%02X).", msg->dlg.relay.id, msg->dlg.relay.value, msg->dlg.relay.exfunc[0], msg->dlg.relay.exfunc[1]);
+          if (msg->dlg.relay.exfunc[0] == DRE_UNSELECTED || msg->dlg.relay.exfunc[0] == DRE_DISABLED){
+            LOG_EVENT("RELAY%u -> %u (0x%02X/0x%02X).", msg->dlg.relay.id, msg->dlg.relay.value, msg->dlg.relay.exfunc[0], msg->dlg.relay.exfunc[1]);
+            publish(hnd->broker, ETT_RELAY, msg->dlg.relay.id, msg->dlg.relay.value);
+          } else {
+            LOG_EVENT("PWM%u -> %u (%u).", msg->dlg.relay.id, msg->dlg.relay.value, msg->dlg.relay.exfunc[0]);
+            publish(hnd->broker, ETT_RELAY_EXT, msg->dlg.relay.id, msg->dlg.relay.value);
+          }
           break;
         case DLG_OVERVIEW:
-         char temp[255];
+          char temp[255];
 
           snprintf (temp, sizeof(temp), "overview %u-%u (%u) -> %uh - %ukWh.", msg->dlg.oview.type, msg->dlg.oview.id, msg->dlg.oview.udo,
                     msg->dlg.oview.hours, msg->dlg.oview.heat_yield);
@@ -331,6 +378,8 @@ void scbi_update (struct scbi_handle *hnd)
         }
       }
     }
+    if (hnd->broker != NULL)
+      mqtt_loop(hnd->broker);
   }
 }
 
