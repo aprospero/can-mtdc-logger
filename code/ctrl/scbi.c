@@ -52,11 +52,20 @@ struct scbi_handle * scbi_init (const char *port)
   return hnd;
 }
 
+
 #if 0
-static int scbi_send(struct scbi_handle * hnd, struct can_frame *frame)
+static int scbi_send(struct scbi_handle * hnd, union scbi_address_id id, union scbi_msg_content * data, uint8_t len)
 {
 	int retval;
-	retval = write(hnd->soc, frame, sizeof(struct can_frame));
+	struct can_frame frame;
+	memset(&frame, 0x00, sizeof(frame));
+	frame.can_id = id.address_id;
+	frame.len = len;
+	memcpy(frame.data, data->raw, sizeof(frame.data));
+
+	scbi_print_CAN_frame (LL_INFO, "SEND", "Sending", &frame);
+
+	retval = write(hnd->soc, &frame, sizeof(struct can_frame));
 	if (retval != sizeof(struct can_frame))
 	{
 		return (-1);
@@ -66,7 +75,30 @@ static int scbi_send(struct scbi_handle * hnd, struct can_frame *frame)
 		return (0);
 	}
 }
+
+void scbi_send_request(struct scbi_handle * hnd)
+{
+  union scbi_address_id  id;
+  union scbi_msg_content data;
+
+  id.address_id = 0UL;
+  memset(&data, 0, sizeof(data));
+
+  id.scbi_id.client = 0xA0;
+  id.scbi_id.msg = CAN_MSG_REQUEST;
+  id.scbi_id.prot = CAN_PROTO_FORMAT_0;
+  id.scbi_id.prog = PRG_AVAILABLERESOURCES;
+  id.scbi_id.func = 0;
+  id.scbi_id.flg_eff = TRUE;
+
+  data.avail_sensor.remote_id = 0x9F;
+
+//  data.dlg.sensor.id = 0;
+
+  scbi_send(hnd, id, &data, sizeof(data.avail_sensor));
+}
 #endif
+
 
 static const char* format_raw_CAN_data (struct can_frame *frame_rd)
 {
@@ -133,18 +165,112 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *
 
 }
 
+static void scbi_compute_controller (struct scbi_handle *hnd, struct can_frame *frame_rd)
+{
+  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
+  union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->data[0];
+  switch (addi->scbi_id.msg)
+  {
+    case CAN_MSG_REQUEST:
+      LOG_INFO ("Controller requests not supported yet.");
+      break;
+    case CAN_MSG_RESERVE:
+      LOG_INFO ("Controller reserve msgs not supported yet.");
+      break;
+    case CAN_MSG_RESPONSE:
+      switch (addi->scbi_id.func)
+      {
+        case CTR_HAS_ANYBODY_HERE:
+          LOG_EVENT("0x%02X asks: 'IS ANYBODY ALIVE?'", msg->identity.can_id);
+          break;
+        case CTR_I_AM_HERE:
+          LOG_EVENT("0x%02X says: 'I AM ALIVE!'", msg->identity.can_id);
+          break;
+        case CTR_I_AM_RESETED:
+          LOG_EVENT("0x%02X says: 'I AM RESET!'", msg->identity.can_id);
+          break;
+        case CTR_GET_CONTROLLER_ID:
+        case CTR_GET_ACTIVE_PROGRAMS_LIST:
+        case CTR_ADD_PROGRAM:
+        case CTR_REMOVE_PROGRAM:
+        case CTR_GET_SYSTEM_DATE_TIME:
+        case CTR_SET_SYSTEM_DATE_TIME:
+        case CTR_DATALOGGER_TEST:
+          LOG_EVENT("Controller function %u - CAN:%u, DEV:%u, OEM:%u, Variant:%u.", addi->scbi_id.func, msg->identity.can_id,
+                   msg->identity.cfg_dev_id, msg->identity.cfg_oem_id, msg->identity.dev_variant);
+          break;
+      }
+      break;
+  }
+}
+
+static void scbi_compute_hcc (struct scbi_handle *hnd, struct can_frame *frame_rd)
+{
+  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
+  union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->data[0];
+  char *type = addi->scbi_id.msg == CAN_MSG_REQUEST ? "REQUEST" : "RESPONSE";
+
+  switch (addi->scbi_id.msg)
+  {
+    case CAN_MSG_REQUEST:
+    case CAN_MSG_RESPONSE:
+      switch (addi->scbi_id.func)
+      {
+        case HCC_HEATREQUEST:
+          if (addi->scbi_id.flg_err)
+            scbi_print_CAN_frame(LL_ERROR, type, "heat request error", frame_rd);
+          else if (frame_rd->len != sizeof(msg->hcc.heatreq))
+            scbi_print_CAN_frame(LL_ERROR, type, "heat request with wrong data len", frame_rd);
+          else
+            LOG_EVENT("(%s) Heat request - Source: %s -> %u°C.", type, msg->hcc.heatreq.heatsource ? "Solar" : "Conv.", BYTE2TEMP(msg->hcc.heatreq.raw_temp));
+          break;
+        case HCC_HEATINGCIRCUIT_STATE1:
+          if (addi->scbi_id.flg_err)
+            LOG_EVENT("(%s) Heat circuit #%u error.", type, frame_rd->data[0]);
+          else if (frame_rd->len < sizeof(msg->hcc.state1))
+            LOG_ERROR("(%s) Heat circuit status 1 msg with wrong data len %u.", type, frame_rd->len);
+          else
+            LOG_EVENT ("(%s) Heat circuit #%u Stats 1: state:0x%02X, flow temp (set/act/storage): %u/%u/%u°C.", type, msg->hcc.state1.circuit,
+                       msg->hcc.state1.state, BYTE2TEMP(msg->hcc.state1.temp_flowset), BYTE2TEMP(msg->hcc.state1.temp_flow),
+                       BYTE2TEMP(msg->hcc.state1.temp_storage));
+          break;
+        case HCC_HEATINGCIRCUIT_STATE2:
+          LOG_EVENT ("(%s) Heat circuit #%u Stats 2: wheel:0x%02X, room temp (set/act): %u/%u°C, humidity: %u%%.", type,
+                   msg->hcc.state2.circuit, msg->hcc.state2.wheel, BYTE2TEMP(msg->hcc.state2.temp_set),
+                   BYTE2TEMP(msg->hcc.state2.temp_room), msg->hcc.state2.humidity);
+          break;
+        case HCC_HEATINGCIRCUIT_STATE3:
+          LOG_EVENT ("(%s)Heat circuit #%u Stats 3: Operation:0x%02X, dewpoint:%u°C, on reason:0x%02X, pump:0x%02X.", type, msg->hcc.state3.circuit,
+                   msg->hcc.state3.op_mode, BYTE2TEMP(msg->hcc.state3.dewpoint), msg->hcc.state3.on_reason, msg->hcc.state3.pump);
+          break;
+        case HCC_HEATINGCIRCUIT_STATE4:
+          LOG_EVENT ("(%s)Heat circuit #%u Stats 4: Operation:0x%02X, dewpoint:%u°C, on reason:0x%02X, pump:0x%02X.", type, msg->hcc.state4.circuit,
+                   BYTE2TEMP(msg->hcc.state4.temp_min), BYTE2TEMP(msg->hcc.state4.temp_max));
+          break;
+      }
+      break;
+    case CAN_MSG_RESERVE:
+      LOG_INFO("HCC reserve msgs not supported yet.");
+      break;
+  }
+}
+
 static void scbi_compute_format0 (struct scbi_handle *hnd, struct can_frame *frame_rd)
 {
   union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
   switch (addi->scbi_id.prog)
   {
+    case PRG_CONTROLLER:
+      scbi_compute_controller (hnd, frame_rd);
+      break;
     case PRG_DATALOGGER_MONITOR:
       scbi_compute_datalogger (hnd, frame_rd);
       break;
-    case PRG_CONTROLLER:
+    case PRG_HCC:
+      scbi_compute_hcc(hnd, frame_rd);
+      break;
     case PRG_REMOTESENSOR:
     case PRG_DATALOGGER_NAMEDSENSORS:
-    case PRG_HCC:
     case PRG_AVAILABLERESOURCES:
     case PRG_PARAMETERSYNCCONFIG:
     case PRG_ROOMSYNC:
