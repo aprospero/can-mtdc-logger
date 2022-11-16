@@ -193,9 +193,8 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *
         case DLG_OVERVIEW:
           char temp[255];
 
-          snprintf (temp, sizeof(temp), "overview %u-%u (%u) -> %uh - %ukWh.", msg->dlg.oview.type, msg->dlg.oview.id, msg->dlg.oview.udo,
-                    msg->dlg.oview.hours, msg->dlg.oview.heat_yield);
-          log_push(LL_DEBUG,"    %-35.35s - (%s)", temp, format_raw_CAN_data (frame_rd));
+          snprintf (temp, sizeof(temp), "overview %u-%u -> %uh/%ukWh.", msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.oview.hours, msg->dlg.oview.heat_yield);
+          log_push(LL_DEBUG," %-30.30s - (%s)", temp, format_raw_CAN_data (frame_rd));
           break;
         case DLF_UNDEFINED:
         case DLG_HYDRAULIC_PROGRAM:

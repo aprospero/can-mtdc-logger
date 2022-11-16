@@ -183,25 +183,49 @@ enum scbi_dlg_relay_ext_func
 
 
 // message definition for overview data
-
-struct scbi_dlg_overview_msg
+#if 0
+struct scbi_dlg_overview_msg  /* this is the definition from the docs */
 {
-   uint8_t  udo:5;
+   uint8_t  index:5;
    uint8_t  type:3;
-   uint8_t  id;
    uint16_t hours;
    uint32_t heat_yield;
 } __attribute__((packed));
+#else
+
+struct scbi_dlg_overview_msg  /* this is the definition by experience */
+{
+   uint8_t  index:5;     /* unused? * */
+   uint8_t  type:3;
+   uint8_t  mode;        /* unknown meaning */
+   uint16_t hours;
+   uint32_t heat_yield;
+} __attribute__((packed));
+#endif
 
 enum scbi_dlg_overview_type
 {
-  DOT_DAYS   = 0x01,
-  DOT_WEEKS  = 0x02,
-  DOT_MONTHS = 0x03,
-  DOT_YEARS  = 0x04,
-  DOT_TOTAL  = 0x05,
-  DOT_STATUS = 0x06
+  DOT_DAYS      = 0x01,
+  DOT_WEEKS     = 0x02,
+  DOT_MONTHS    = 0x03,
+  DOT_YEARS     = 0x04,
+  DOT_TOTAL     = 0x05,
+  DOT_STATUS    = 0x06,
+  DOT_UNKNOWN07 = 0x07,
+  DOT_UNKNOWN08 = 0x08,
+  DOT_UNKNOWN09 = 0x09,
+  DOT_UNKNOWN10 = 0x0A
+
 };
+
+enum scbi_dlg_overview_mode
+{
+  DOM_00    = 0x00,  /* unknown meaning */
+  DOM_01    = 0x01,
+  DOM_02    = 0x02
+};
+
+
 
 union scbi_data_logger_msg
 {
