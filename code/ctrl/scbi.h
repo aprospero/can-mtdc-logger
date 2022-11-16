@@ -115,7 +115,11 @@ enum scbi_dlg_sensor_type
   DST_TEMPERATURE      = 0x04,
   DST_HUMIDIDY         = 0x05,
   DST_ROOM_CTRL_WHEEL  = 0x06,
-  DST_ROOM_CTRL_SWITCH = 0x07
+  DST_ROOM_CTRL_SWITCH = 0x07,
+
+  DST_COUNT,
+
+  DST_UNDEFINED        = 0xFF,
 };
 
 
@@ -134,7 +138,9 @@ enum scbi_dlg_relay_mode
   DRM_RELAYMODE_SWITCHED = 0x00,
   DRM_RELAYMODE_PHASE    = 0x01,
   DRM_RELAYMODE_PWM      = 0x02,
-  DRM_RELAYMODE_VOLTAGE  = 0x03
+  DRM_RELAYMODE_VOLTAGE  = 0x03,
+
+  DRM_COUNT
 };
 
 enum scbi_dlg_relay_ext_func
@@ -178,7 +184,9 @@ enum scbi_dlg_relay_ext_func
   DRE_PRIMARYMIXER_UP     = 0x29,
   DRE_PRIMARYMIXER_DOWN   = 0x30,
   DRE_SOLAR               = 0x31,
-  DRE_CASCADE             = 0x32
+  DRE_CASCADE             = 0x32,
+
+  DRE_COUNT               = DRE_CASCADE + 2 /* DES_DISABLED/UNSELECTED added */
 };
 
 
@@ -214,15 +222,18 @@ enum scbi_dlg_overview_type
   DOT_UNKNOWN07 = 0x07,
   DOT_UNKNOWN08 = 0x08,
   DOT_UNKNOWN09 = 0x09,
-  DOT_UNKNOWN10 = 0x0A
+  DOT_UNKNOWN10 = 0x0A,
 
+  DOT_COUNT
 };
 
 enum scbi_dlg_overview_mode
 {
   DOM_00    = 0x00,  /* unknown meaning */
   DOM_01    = 0x01,
-  DOM_02    = 0x02
+  DOM_02    = 0x02,
+
+  DOM_COUNT
 };
 
 
@@ -323,9 +334,17 @@ union scbi_msg_content
 };
 
 
+#define SCBI_MAX_SENSORS 4
+#define SCBI_MAX_RELAYS  2
+
 
 struct scbi_handle * scbi_init(const char * port, void * broker);
-void                 scbi_update(struct scbi_handle * hnd);
-int                  scbi_close(struct scbi_handle * hnd);
+
+int  scbi_register_dlg_sensor(struct scbi_handle * hnd, enum scbi_dlg_sensor_type type, size_t id, const char * entity);
+int  scbi_register_dlg_relay(struct scbi_handle * hnd, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, size_t id, const char * entity);
+int  scbi_register_dlg_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, const char * entity);
+
+void scbi_update(struct scbi_handle * hnd);
+int  scbi_close(struct scbi_handle * hnd);
 
 #endif   // _CTRL_SCBI__H

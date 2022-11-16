@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
@@ -13,51 +14,104 @@
 #include "ctrl/com/mqtt.h"
 #include "tool/logger.h"
 
-const char * entity_name[2][4][2] =
+struct scbi_entity
 {
-  {
-      { "collector", "" },
-      { "storage",   "" },
-      { "unused1",   "" },
-      { "unused2",   "" }
-  },
-  {
-      { "Pump"   , "PWM"     },
-      { "unused1", "unused1" },
-      { "unused2", "unused2" },
-      { "unused3", "unused3" }
-  }
+    const char * name;
+    int32_t      last_val;
 };
-
-#define ENTITY_MAX_ID 1
-
-enum scbi_entity_type
+struct scbi_entities
 {
-  ETT_SENSOR,
-  ETT_RELAY,
-  ETT_RELAY_EXT
+    struct scbi_entity sensor [DST_COUNT][SCBI_MAX_SENSORS];
+    struct scbi_entity relay [DRM_COUNT][DRE_COUNT][SCBI_MAX_RELAYS];
+    struct scbi_entity oview [DOT_COUNT][DOM_COUNT];
 };
-
-const char * entity[] = {
-    "sensor",
-    "device"
-};
-
-static void publish(struct mqtt_handle * broker, enum scbi_entity_type type, unsigned int id, int value)
-{
-  int is_ext = type == ETT_RELAY_EXT;
-  int type_id = is_ext ? ETT_RELAY : type;
-  mqtt_publish(broker, entity[type], entity_name[type_id][id][is_ext ? 1 : 0], value);
-}
-
-typedef void (*compute_CAN_msg) (struct can_frame *frame_rd);
 
 struct scbi_handle
 {
   int                  soc;
   int                  read_can_port;
   struct mqtt_handle * broker;
+  struct scbi_entities entity;
 };
+
+int scbi_register_dlg_sensor(struct scbi_handle * hnd, enum scbi_dlg_sensor_type type, size_t id, const char * entity)
+{
+  if (id >= SCBI_MAX_SENSORS)
+    return -1;
+  if (type >= DST_COUNT)
+    type = DST_UNKNOWN;
+  hnd->entity.sensor[type][id].name = entity;
+  hnd->entity.sensor[type][id].last_val = INT32_MAX;
+  return 0;
+}
+
+int scbi_register_dlg_relay(struct scbi_handle * hnd, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, size_t id, const char * entity)
+{
+  if (efct == DRE_DISABLED || efct == DRE_UNSELECTED)
+    efct -= DRE_DISABLED - (DRE_COUNT - 2);
+  if (mode >= DRM_COUNT || efct >= DRE_COUNT || id >= SCBI_MAX_RELAYS)
+    return -1;
+  hnd->entity.relay[mode][efct][id].name     = entity;
+  hnd->entity.relay[mode][efct][id].last_val = INT32_MAX;
+  return 0;
+}
+
+int scbi_register_dlg_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, const char * entity)
+{
+  if (type >= DOT_COUNT || mode >= DOM_COUNT)
+    return -1;
+  hnd->entity.oview[type][mode].name = entity;
+  hnd->entity.oview[type][mode].last_val = INT32_MAX;
+  return 0;
+}
+
+
+
+static inline void publish_sensor(struct scbi_handle * hnd, enum scbi_dlg_sensor_type type, size_t id, int32_t value)
+{
+  struct scbi_entity * entity = NULL;
+  if (type < DST_COUNT && id < SCBI_MAX_SENSORS)
+  {
+    entity = &hnd->entity.sensor[type][id];
+    if (entity->name && entity->last_val != value)
+    {
+      mqtt_publish(hnd->broker, "sensor", entity->name, value);
+      entity->last_val = value;
+    }
+  }
+}
+
+static inline void publish_relay(struct scbi_handle * hnd, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, size_t id, int value)
+{
+  struct scbi_entity * entity = NULL;
+  if (efct == DRE_DISABLED || efct == DRE_UNSELECTED)
+    efct -= DRE_DISABLED - (DRE_COUNT - 2);  /* last two extfuncts (0xFE & 0XFF) are wrapped to the end of the map */
+  if (mode < DRM_COUNT && efct < DRE_COUNT && id < SCBI_MAX_RELAYS)
+  {
+    entity = &hnd->entity.relay[mode][efct][id];
+    if (entity->name && entity->last_val != value)
+    {
+      mqtt_publish(hnd->broker, "relay", entity->name, value);
+      entity->last_val = value;
+    }
+  }
+}
+
+static inline void publish_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, int value)
+{
+  struct scbi_entity * entity = NULL;
+  if (type < DOT_COUNT && mode < DOM_COUNT)
+  {
+    entity = &hnd->entity.oview[type][mode];
+    if (entity->name && entity->last_val != value)
+    {
+      mqtt_publish(hnd->broker, "overview", entity->name, value);
+      entity->last_val = value;
+    }
+  }
+}
+
+
 
 struct scbi_handle * scbi_init (const char *port, void * broker)
 {
@@ -178,23 +232,19 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *
       switch (addi->scbi_id.func)
       {
         case DLF_SENSOR:
-          LOG_EVENT("SENSOR%u -> %u.", msg->dlg.sensor.id, msg->dlg.sensor.value);
-          publish(hnd->broker, ETT_SENSOR, msg->dlg.sensor.id, msg->dlg.sensor.value);
+          LOG_EVENT("SENSOR%u (%u) -> %u.", msg->dlg.sensor.id, msg->dlg.sensor.type, msg->dlg.sensor.value);
+          publish_sensor(hnd, msg->dlg.sensor.type, msg->dlg.sensor.id,  msg->dlg.sensor.value);
           break;
         case DLF_RELAY:
-          if (msg->dlg.relay.exfunc[0] == DRE_UNSELECTED || msg->dlg.relay.exfunc[0] == DRE_DISABLED){
-            LOG_EVENT("RELAY%u -> %u (0x%02X/0x%02X).", msg->dlg.relay.id, msg->dlg.relay.value, msg->dlg.relay.exfunc[0], msg->dlg.relay.exfunc[1]);
-            publish(hnd->broker, ETT_RELAY, msg->dlg.relay.id, msg->dlg.relay.value);
-          } else {
-            LOG_EVENT("PWM%u -> %u (%u).", msg->dlg.relay.id, msg->dlg.relay.value, msg->dlg.relay.exfunc[0]);
-            publish(hnd->broker, ETT_RELAY_EXT, msg->dlg.relay.id, msg->dlg.relay.value);
-          }
+          LOG_EVENT("RELAY%u (%u/%u) -> %u (%s).", msg->dlg.relay.id, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.value, format_raw_CAN_data (frame_rd));
+          publish_relay(hnd, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.id, msg->dlg.relay.value);
           break;
         case DLG_OVERVIEW:
           char temp[255];
 
           snprintf (temp, sizeof(temp), "overview %u-%u -> %uh/%ukWh.", msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.oview.hours, msg->dlg.oview.heat_yield);
           log_push(LL_DEBUG," %-30.30s - (%s)", temp, format_raw_CAN_data (frame_rd));
+          publish_overview(hnd, msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.relay.value);
           break;
         case DLF_UNDEFINED:
         case DLG_HYDRAULIC_PROGRAM:
