@@ -340,8 +340,8 @@ union scbi_msg_content
 
 struct scbi_handle * scbi_init(const char * port, void * broker);
 
-int  scbi_register_dlg_sensor(struct scbi_handle * hnd, enum scbi_dlg_sensor_type type, size_t id, const char * entity);
-int  scbi_register_dlg_relay(struct scbi_handle * hnd, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, size_t id, const char * entity);
+int  scbi_register_dlg_sensor(struct scbi_handle * hnd, size_t id, enum scbi_dlg_sensor_type type, const char * entity);
+int  scbi_register_dlg_relay(struct scbi_handle * hnd, size_t id, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, const char * entity);
 int  scbi_register_dlg_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, const char * entity);
 
 void scbi_update(struct scbi_handle * hnd);

@@ -34,7 +34,7 @@ struct scbi_handle
   struct scbi_entities entity;
 };
 
-int scbi_register_dlg_sensor(struct scbi_handle * hnd, enum scbi_dlg_sensor_type type, size_t id, const char * entity)
+int scbi_register_dlg_sensor(struct scbi_handle * hnd, size_t id, enum scbi_dlg_sensor_type type, const char * entity)
 {
   if (id >= SCBI_MAX_SENSORS)
     return -1;
@@ -45,7 +45,7 @@ int scbi_register_dlg_sensor(struct scbi_handle * hnd, enum scbi_dlg_sensor_type
   return 0;
 }
 
-int scbi_register_dlg_relay(struct scbi_handle * hnd, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, size_t id, const char * entity)
+int scbi_register_dlg_relay(struct scbi_handle * hnd, size_t id, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, const char * entity)
 {
   if (efct == DRE_DISABLED || efct == DRE_UNSELECTED)
     efct -= DRE_DISABLED - (DRE_COUNT - 2);

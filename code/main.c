@@ -22,13 +22,12 @@ int main(void)
     scbi = scbi_init("can0", mqtt);
     if (scbi)
     {
-      scbi_register_dlg_sensor(scbi, DST_UNDEFINED, 0, "collector");
-      scbi_register_dlg_sensor(scbi, DST_UNDEFINED, 1, "storage");
+      scbi_register_dlg_sensor(scbi, 0, DST_UNDEFINED, "collector");
+      scbi_register_dlg_sensor(scbi, 1, DST_UNDEFINED, "storage");
 
-      scbi_register_dlg_relay(scbi, DRM_RELAYMODE_SWITCHED, DRE_UNSELECTED, 0, "pump_state");
-      scbi_register_dlg_relay(scbi, DRM_RELAYMODE_PWM     , DRE_UNSELECTED, 0, "pump");
-      scbi_register_dlg_relay(scbi, DRM_RELAYMODE_SWITCHED, DRE_UNSELECTED, 1, "pump1_state");
-      scbi_register_dlg_relay(scbi, DRM_RELAYMODE_PWM     , DRE_UNSELECTED, 1, "pump1");
+      scbi_register_dlg_relay(scbi, 0, DRM_RELAYMODE_SWITCHED, DRE_UNSELECTED, "pump_on");
+      scbi_register_dlg_relay(scbi, 2, DRM_RELAYMODE_PWM     , DRE_UNSELECTED, "pump");
+      scbi_register_dlg_relay(scbi, 1, DRM_RELAYMODE_SWITCHED, DRE_UNSELECTED, "relay1");
 
       scbi_register_dlg_overview(scbi, DOT_DAYS, DOM_00, "days0");
       scbi_register_dlg_overview(scbi, DOT_DAYS, DOM_01, "days1");
