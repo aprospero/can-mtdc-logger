@@ -101,7 +101,7 @@ enum scbi_dlg_function_type   /* PRG_DATALOGGER_MONITOR related functions */
 struct scbi_dlg_sensor_msg
 {
   uint8_t  id;
-  uint16_t value;
+  int16_t  value;
   uint8_t  type;
   uint8_t  subtype;
 } __attribute__((packed));

@@ -232,7 +232,7 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *
       switch (addi->scbi_id.func)
       {
         case DLF_SENSOR:
-          LOG_EVENT("SENSOR%u (%u) -> %u.", msg->dlg.sensor.id, msg->dlg.sensor.type, msg->dlg.sensor.value);
+          LOG_EVENT("SENSOR%u (%u) -> %d.", msg->dlg.sensor.id, msg->dlg.sensor.type, msg->dlg.sensor.value);
           publish_sensor(hnd, msg->dlg.sensor.type, msg->dlg.sensor.id,  msg->dlg.sensor.value);
           break;
         case DLF_RELAY:
