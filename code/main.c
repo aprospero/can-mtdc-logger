@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <string.h>
 
 #include "ctrl/scbi.h"
 #include "ctrl/com/mqtt.h"
@@ -7,11 +8,21 @@
 
 
 
-int main(void)
+int main(int argc, const char * argv[])
 {
   struct mqtt_handle * mqtt;
   struct scbi_handle * scbi;
 
+  const char * prg = argv[0];
+
+  prg = strrchr(prg, '/');
+
+  if (prg == NULL)
+    prg = argv[0];
+  else
+    prg++;
+
+  log_init(LM_SYSLOG, prg, LF_LOCAL0);
 //  log_set_level(LL_CRITICAL, TRUE);
   log_set_level(LL_INFO, TRUE);
   log_set_level(LL_DEBUG, TRUE);
