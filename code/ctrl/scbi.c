@@ -70,7 +70,9 @@ int scbi_register_dlg_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_
 static inline void publish_sensor(struct scbi_handle * hnd, enum scbi_dlg_sensor_type type, size_t id, int32_t value)
 {
   struct scbi_entity * entity = NULL;
-  if (type < DST_COUNT && id < SCBI_MAX_SENSORS)
+  if (type >= DST_COUNT)
+    type = DST_UNKNOWN;
+  if (id < SCBI_MAX_SENSORS)
   {
     entity = &hnd->entity.sensor[type][id];
     if (entity->name && entity->last_val != value)
@@ -117,7 +119,7 @@ struct scbi_handle * scbi_init (const char *port, void * broker)
 {
   struct ifreq ifr;
   struct sockaddr_can addr;
-  struct scbi_handle * hnd = malloc (sizeof(struct scbi_handle));
+  struct scbi_handle * hnd = calloc (1, sizeof(struct scbi_handle));
 
   if (hnd == NULL)
     return NULL;
