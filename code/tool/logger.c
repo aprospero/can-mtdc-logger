@@ -29,6 +29,11 @@ void log_set_level(enum log_level ll, size_t active)
   else level[ll] = FALSE;
 }
 
+int log_get_level(enum log_level ll)
+{
+  return level[ll];
+}
+
 
 void log_push(const enum log_level ll, const char * format, ...)
 {

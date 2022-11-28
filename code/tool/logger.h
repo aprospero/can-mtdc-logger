@@ -42,6 +42,7 @@ enum log_level
 
 
 void log_set_level(enum log_level ll, size_t active);
+int  log_get_level(enum log_level ll);
 void log_push(const enum log_level ll, const char * format, ...) __attribute__((format(printf, 2, 3)));
 
 

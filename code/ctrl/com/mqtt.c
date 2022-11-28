@@ -80,7 +80,7 @@ void mqtt_publish(struct mqtt_handle * hnd, const char * type, const char * enti
   static char tmp_msg[255];
   int result;
   snprintf(tmp_msg, sizeof(tmp_msg), "%s,type=%s value=%d", entity, type, value);
-  log_push(LL_DEBUG, "MQTT - publishing in topic %s: %s.", hnd->topic, tmp_msg);
+  log_push(LL_INFO, "MQTT - publishing in topic %s: %s.", hnd->topic, tmp_msg);
   result = mosquitto_publish(hnd->mosq, NULL, hnd->topic, strlen(tmp_msg), tmp_msg, 0, FALSE);
   switch (result)
   {

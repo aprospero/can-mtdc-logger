@@ -209,11 +209,14 @@ static const char* format_raw_CAN_data (struct can_frame *frame_rd)
 
 static void scbi_print_CAN_frame (enum log_level ll, const char * msg_type, const char * txt, struct can_frame *frame_rd)
 {
-  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
-  log_push(ll, "(%s) %s: CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data:%s.", msg_type, txt, addi->address_id,
-           addi->scbi_id.prog, addi->scbi_id.client, addi->scbi_id.func, addi->scbi_id.prot, addi->scbi_id.msg,
-           addi->scbi_id.flg_err ? " ERR" : "", addi->scbi_id.flg_eff ? " EFF" : "", addi->scbi_id.flg_rtr ? " RTR" : "", frame_rd->len,
-           format_raw_CAN_data (frame_rd));
+  if (log_get_level(ll))
+  {
+    union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
+    log_push(ll, "(%s) %s: CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data:%s.", msg_type, txt, addi->address_id,
+             addi->scbi_id.prog, addi->scbi_id.client, addi->scbi_id.func, addi->scbi_id.prot, addi->scbi_id.msg,
+             addi->scbi_id.flg_err ? " ERR" : "", addi->scbi_id.flg_eff ? " EFF" : "", addi->scbi_id.flg_rtr ? " RTR" : "", frame_rd->len,
+             format_raw_CAN_data (frame_rd));
+  }
 }
 
 static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *frame_rd)
@@ -243,7 +246,7 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *
           char temp[255];
 
           snprintf (temp, sizeof(temp), "overview %u-%u -> %uh/%ukWh.", msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.oview.hours, msg->dlg.oview.heat_yield);
-          log_push(LL_DEBUG," %-30.30s - (%s)", temp, format_raw_CAN_data (frame_rd));
+          log_push(LL_DEBUG,"%-26.26s - (%s)", temp, format_raw_CAN_data (frame_rd));
           publish_overview(hnd, msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.relay.value);
           break;
         case DLF_UNDEFINED:
@@ -406,6 +409,7 @@ void scbi_update (struct scbi_handle *hnd)
             scbi_print_CAN_frame (LL_ERROR, "FRAME", "Frame Error", &frame_rd);
           else
           {
+            scbi_print_CAN_frame (LL_DEBUG_MORE, "FRAME", "Msg", &frame_rd);
             switch (addi->scbi_id.prot)
             {
               case CAN_PROTO_FORMAT_0:
