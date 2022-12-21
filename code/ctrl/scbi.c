@@ -9,6 +9,7 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include <time.h>
+#include <errno.h>
 
 #include "ctrl/scbi.h"
 #include "ctrl/com/mqtt.h"
@@ -121,19 +122,27 @@ struct scbi_handle * scbi_init (const char *port, void * broker)
   struct sockaddr_can addr;
   struct scbi_handle * hnd = calloc (1, sizeof(struct scbi_handle));
 
+  LOG_INFO("Initializing Sorel CAN Msg parser.");
+
   if (hnd == NULL)
+  {
+    LOG_CRITICAL("Could not alocate ressources for Sorel CAN Msg parser.");
     return NULL;
+  }
 
   hnd->soc = socket (PF_CAN, SOCK_RAW, CAN_RAW);
   if (hnd->soc < 0)
   {
+    LOG_CRITICAL("Could not open CAN interface. Error: %s", strerror(errno));
     free(hnd);
     return NULL;
   }
+
   addr.can_family = AF_CAN;
   strcpy (ifr.ifr_name, port);
   if (ioctl (hnd->soc, SIOCGIFINDEX, &ifr) < 0)
   {
+    LOG_CRITICAL("Could not address CAN interface. Error: %s", strerror(errno));
     free(hnd);
     return NULL;
   }
@@ -141,6 +150,7 @@ struct scbi_handle * scbi_init (const char *port, void * broker)
   fcntl (hnd->soc, F_SETFL, O_NONBLOCK);
   if (bind (hnd->soc, (struct sockaddr*) &addr, sizeof(addr)) < 0)
   {
+    LOG_CRITICAL("Could not bind to CAN interface. Error: %s", strerror(errno));
     free(hnd);
     return NULL;
   }

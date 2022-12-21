@@ -35,42 +35,65 @@ void on_disconnect(struct mosquitto *mosq, void *userdata, int mid)
 struct mqtt_handle * mqtt_init(const char * topic)
 {
   int result;
+  int doLog = TRUE;
   struct mqtt_handle * hnd = calloc(sizeof(struct mqtt_handle), 1);
-  if (hnd != NULL)
+
+  log_push(LL_DEBUG,"Initializing connection to MQTT broker.");
+
+  if (hnd == NULL)
   {
-    hnd->topic = topic;
-    mosquitto_lib_init();
-    hnd->mosq = mosquitto_new("cansorella", TRUE, NULL);
-    if (hnd->mosq == NULL)
-    {
-      LOG_CRITICAL("MQTT - Could not instantiate a broker socket.");
-      goto init_mqtt_fail;
-    }
-
-    result = mosquitto_username_pw_set(hnd->mosq,"cansorella","cansorella");
-    if (result != MOSQ_ERR_SUCCESS)
-    {
-      LOG_CRITICAL("MQTT - Could not set broker user: %d\n", result);
-      goto init_mqtt_fail;
-    }
-
-    mosquitto_publish_callback_set(hnd->mosq, on_publish);
-    mosquitto_connect_callback_set(hnd->mosq, on_connect);
-    mosquitto_disconnect_callback_set(hnd->mosq, on_disconnect);
-
-    result = mosquitto_connect(hnd->mosq, "localhost", 1883, 10);
-    if (result != MOSQ_ERR_SUCCESS)
-    {
-      if (result == MOSQ_ERR_ERRNO)
-        LOG_CRITICAL("MQTT - Could not connect to broker. Syscall returned %s\n", strerror(errno));
-      else
-        LOG_CRITICAL("MQTT - Could not connect to broker. Error returned: %u\n", result);
-      goto init_mqtt_fail;
-    }
+    LOG_CRITICAL("Could not allocate resources for MQTT Connection!");
+    return NULL;
   }
+
+  hnd->topic = topic;
+  mosquitto_lib_init();
+  log_push(LL_DEBUG,"Initialized MQTT library.");
+
+  hnd->mosq = mosquitto_new("cansorella", TRUE, NULL);
+  if (hnd->mosq == NULL)
+  {
+    LOG_CRITICAL("MQTT - Could not instantiate a broker socket.");
+    goto init_mqtt_fail;
+  }
+
+  log_push(LL_DEBUG,"Instantiated a broker socket.");
+
+  result = mosquitto_username_pw_set(hnd->mosq,"cansorella","cansorella");
+  if (result != MOSQ_ERR_SUCCESS)
+  {
+    LOG_CRITICAL("MQTT - Could not set broker user: %d\n", result);
+    goto init_mqtt_fail;
+  }
+
+  log_push(LL_DEBUG, "Set a MQTT broker user.");
+
+  mosquitto_publish_callback_set(hnd->mosq, on_publish);
+  mosquitto_connect_callback_set(hnd->mosq, on_connect);
+  mosquitto_disconnect_callback_set(hnd->mosq, on_disconnect);
+
+  log_push(LL_DEBUG, "MQTT broker callbacks set.");
+
+  while ((result = mosquitto_connect(hnd->mosq, "localhost", 1883, 10)) != MOSQ_ERR_SUCCESS)
+  {
+    if (result == MOSQ_ERR_ERRNO)
+    {
+      if (doLog)
+        LOG_WARN("MQTT - Could not connect to broker. Syscall returned '%s'. Retry every 5 sec.", strerror(errno));
+      doLog = FALSE;
+    }
+    else
+    {
+      LOG_CRITICAL("MQTT - Could not connect to broker. Connect returned: %u", result);
+      goto init_mqtt_fail;
+    }
+    sleep(5);
+  }
+  log_push(LL_DEBUG, "Success - MQTT broker connected.");
   return hnd;
 
 init_mqtt_fail:
+
   free(hnd);
   return NULL;
 }

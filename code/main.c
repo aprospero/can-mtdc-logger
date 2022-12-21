@@ -1,11 +1,19 @@
 #include <stddef.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #include "ctrl/scbi.h"
 #include "ctrl/com/mqtt.h"
 #include "tool/logger.h"
 
 
+void clean_exit_on_sig(int sig_num)
+{
+  LOG_CRITICAL("Signal %d received", sig_num);
+  exit(0);
+}
 
 
 int main(int argc, const char * argv[])
@@ -14,6 +22,7 @@ int main(int argc, const char * argv[])
   struct scbi_handle * scbi;
 
   const char * prg = argv[0];
+
 
   prg = strrchr(prg, '/');
 
@@ -26,6 +35,12 @@ int main(int argc, const char * argv[])
 //  log_set_level(LL_CRITICAL, TRUE);
   log_set_level(LL_INFO, TRUE);
   log_set_level(LL_DEBUG, TRUE);
+
+  signal(SIGABRT, clean_exit_on_sig);
+  signal(SIGINT,  clean_exit_on_sig);
+  signal(SIGSEGV, clean_exit_on_sig);
+  signal(SIGTERM, clean_exit_on_sig);
+  signal(SIGPIPE, SIG_IGN);
 
   mqtt = mqtt_init("MTDC");
   if (mqtt)
