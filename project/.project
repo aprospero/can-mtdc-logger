@@ -30,6 +30,16 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>code/args.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/code/args.c</locationURI>
+		</link>
+		<link>
+			<name>code/args.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/code/args.h</locationURI>
+		</link>
+		<link>
 			<name>code/ctrl</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
@@ -43,6 +53,11 @@
 			<name>code/tool</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>code/version.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/code/version.h</locationURI>
 		</link>
 		<link>
 			<name>code/ctrl/com</name>
@@ -68,6 +83,16 @@
 			<name>code/tool/logger.h</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/code/tool/logger.h</locationURI>
+		</link>
+		<link>
+			<name>code/tool/stringhelp.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/code/tool/stringhelp.c</locationURI>
+		</link>
+		<link>
+			<name>code/tool/stringhelp.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/code/tool/stringhelp.h</locationURI>
 		</link>
 		<link>
 			<name>code/ctrl/com/mqtt.c</name>

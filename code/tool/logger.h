@@ -3,14 +3,9 @@
 
 #include <stdarg.h>
 
-enum log_mode
-{
-  LM_STDOUT_STDERR,
-  LM_SYSLOG,
-};
-
 enum log_level
 {
+  LL_NONE,
   LL_CRITICAL,   /* application severed -> exit */
   LL_ERROR,      /* unwanted event but application can handle */
   LL_WARN,       /* unexpected event with potential to lead to errors */
@@ -25,27 +20,16 @@ enum log_level
 
 enum log_facility
 {
-  LF_NONE = 0x00,
-  LF_KERN       , /* kernel messages */
-  LF_USER       , /* random user-level messages */
-  LF_MAIL       , /* mail system */
-  LF_DAEMON     , /* system daemons */
-  LF_AUTH       , /* security/authorization messages */
-  LF_SYSLOG     , /* messages generated internally by syslogd */
-  LF_LPR        , /* line printer subsystem */
-  LF_NEWS       , /* network news subsystem */
-  LF_UUCP       , /* UUCP subsystem */
-  LF_CRON       , /* clock daemon */
-  LF_AUTHPRIV   , /* security/authorization messages (private) */
-  LF_FTP        , /* ftp daemon */
-  LF_LOCAL0     , /* reserved for local use */
-  LF_LOCAL1     , /* reserved for local use */
-  LF_LOCAL2     , /* reserved for local use */
-  LF_LOCAL3     , /* reserved for local use */
-  LF_LOCAL4     , /* reserved for local use */
-  LF_LOCAL5     , /* reserved for local use */
-  LF_LOCAL6     , /* reserved for local use */
-  LF_LOCAL7     , /* reserved for local use */
+  LF_STDOUT = 0x00,
+  LF_USER         , /* random user-level messages */
+  LF_LOCAL0       , /* reserved for local use */
+  LF_LOCAL1       , /* reserved for local use */
+  LF_LOCAL2       , /* reserved for local use */
+  LF_LOCAL3       , /* reserved for local use */
+  LF_LOCAL4       , /* reserved for local use */
+  LF_LOCAL5       , /* reserved for local use */
+  LF_LOCAL6       , /* reserved for local use */
+  LF_LOCAL7       , /* reserved for local use */
 
   LF_COUNT
 };
@@ -62,6 +46,9 @@ enum log_facility
 #define LOG_CRITICAL(FORMAT, ...) log_push(LL_CRITICAL, FORMAT, ##__VA_ARGS__)
 #endif
 
+
+// standard stuff that should be put in a distinct header some day...
+
 #ifndef NULL
 #  define NULL ((void*) 0)
 #endif
@@ -74,10 +61,20 @@ enum log_facility
 #  define TRUE   (!0)
 #endif
 
+#ifndef ARRLEN
+#define ARRLEN(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
+#endif
 
-void log_init(enum log_mode mode, const char * ident, enum log_facility facility);
+void log_init(const char * ident, enum log_facility facility);
 void log_set_level(enum log_level ll, size_t active);
 int  log_get_level(enum log_level ll);
+
+enum log_level log_get_level_no(const char * level);
+enum log_facility log_get_facility(const char * facility);
+
+const char * log_get_level_name(enum log_level ll);
+const char * log_get_facility_name(size_t id);
+
 void log_push(const enum log_level ll, const char * format, ...) __attribute__((format(printf, 2, 3)));
 
 

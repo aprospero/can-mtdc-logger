@@ -7,6 +7,7 @@
 #include "ctrl/scbi.h"
 #include "ctrl/com/mqtt.h"
 #include "tool/logger.h"
+#include "args.h"
 
 
 void clean_exit_on_sig(int sig_num)
@@ -15,26 +16,16 @@ void clean_exit_on_sig(int sig_num)
   exit(0);
 }
 
-
-int main(int argc, const char * argv[])
+int main(int argc, char * argv[])
 {
+  struct cansorella_config config;
   struct mqtt_handle * mqtt;
   struct scbi_handle * scbi;
 
-  const char * prg = argv[0];
+  parseArgs(argc, argv, &config);
 
-
-  prg = strrchr(prg, '/');
-
-  if (prg == NULL)
-    prg = argv[0];
-  else
-    prg++;
-
-  log_init(LM_SYSLOG, prg, LF_LOCAL0);
-//  log_set_level(LL_CRITICAL, TRUE);
-  log_set_level(LL_INFO, TRUE);
-  log_set_level(LL_DEBUG, TRUE);
+  log_init(config.prg_name, config.log_facility);
+  log_set_level(config.log_level, TRUE);
 
   signal(SIGABRT, clean_exit_on_sig);
   signal(SIGINT,  clean_exit_on_sig);
