@@ -21,7 +21,7 @@ My personal setup is the following:
 
 # How it works
 * The MTDC device is attached to the SoC board via CAN-bus. 
-* This SW project provides a program serving as a translator between CAN-bus and MQTT, sending mosquitto anything about the state of the MTDC device.
+* This SW project provides a binary serving as translator between CAN-bus and MQTT, sending mosquitto anything about the state of the MTDC device.
 * Telegraf in turn pipes data snippets of certain topics into influxdb, which is responsible for data persistence and answering queries.
 * grafana queries influxdb for certain datasets, after configuring influxdb as data source and creating a matching dashboard.
 
