@@ -65,7 +65,7 @@ enum log_facility
 #define ARRLEN(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
 #endif
 
-void log_init(const char * ident, enum log_facility facility);
+void log_init(const char * ident, enum log_facility facility, enum log_level ll);
 void log_set_level(enum log_level ll, size_t active);
 int  log_get_level(enum log_level ll);
 

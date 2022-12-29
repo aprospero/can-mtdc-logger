@@ -110,9 +110,10 @@ const int lf_translation[LF_COUNT] =
 };
 
 
-void log_init(const char * ident, enum log_facility facility)
+void log_init(const char * ident, enum log_facility facility, enum log_level default_ll)
 {
   memset(&log,0,sizeof(log));
+  log_set_level(default_ll, TRUE);
 
   if (facility > LF_STDOUT && facility < LF_COUNT && ident)
   {
@@ -121,6 +122,12 @@ void log_init(const char * ident, enum log_facility facility)
   }
   else
   {
+    if (facility != LF_STDOUT)
+    {
+      const char * fac_name = facility >= LF_COUNT ? "invalid" : facility_txt[facility];
+      const char * ident_name = ident == NULL ? "unknown" : ident;
+      log_push(LL_WARN, "Logging via STDOUT/STDERR. %s facility and %s ident not feasible.", fac_name, ident_name);
+    }
     log.fct = log_stdout_stderr;
   }
 }

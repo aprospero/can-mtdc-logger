@@ -24,8 +24,7 @@ int main(int argc, char * argv[])
 
   parseArgs(argc, argv, &config);
 
-  log_init(config.prg_name, config.log_facility);
-  log_set_level(config.log_level, TRUE);
+  log_init(config.prg_name, config.log_facility, config.log_level);
 
   signal(SIGABRT, clean_exit_on_sig);
   signal(SIGINT,  clean_exit_on_sig);
