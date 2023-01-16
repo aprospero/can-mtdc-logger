@@ -130,7 +130,7 @@ void mqtt_loop(struct mqtt_handle * hnd)
     case MOSQ_ERR_SUCCESS   : break;
     case MOSQ_ERR_NO_CONN   :
       result = mosquitto_reconnect(hnd->mosq);
-      LOG_INFO("MQTT - disconnected. Reconnect returns &d.\n", result);
+      LOG_INFO("MQTT - disconnected. Reconnect returns %d.\n", result);
       break;
     case MOSQ_ERR_INVAL     :
     case MOSQ_ERR_NOMEM     :
