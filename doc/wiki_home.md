@@ -26,4 +26,6 @@ My personal setup is the following:
 * grafana queries influxdb for certain datasets, after configuring influxdb as data source and creating a matching dashboard.
 
 # Result
-Voila, one can use any browser to connect to the sabre lite SoC board and have a nice view over the state of the MTDC. (see picture /doc/grafana_dashboard.png)
+Voila, one can use any browser to connect to the sabre lite SoC board and have a nice view over the state of the MTDC. 
+
+![Grafana Dashboard](https://github.com/aprospero/can-mtdc-logger/blob/master/doc/grafana_dashboard.png)
