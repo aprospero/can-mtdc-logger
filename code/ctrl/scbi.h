@@ -39,9 +39,9 @@ struct scbi_id_format
 
 union scbi_address_id
 {
-  uint32_t               address_id;
+  uint32_t               address_id:29;
   struct scbi_id_format  scbi_id;
-};
+} __attribute__((packed));
 
 
 
