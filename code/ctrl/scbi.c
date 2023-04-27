@@ -311,6 +311,8 @@ static void scbi_compute_hcc (struct scbi_handle *hnd, struct can_frame *frame_r
   switch (addi->scbi_id.msg)
   {
     case CAN_MSG_REQUEST:
+      scbi_print_CAN_frame(LL_INFO, type, "HCC request msgs not supported yet.", frame_rd);
+      break;
     case CAN_MSG_RESPONSE:
       switch (addi->scbi_id.func)
       {
@@ -318,15 +320,16 @@ static void scbi_compute_hcc (struct scbi_handle *hnd, struct can_frame *frame_r
           if (addi->scbi_id.flg_err)
             scbi_print_CAN_frame(LL_ERROR, type, "heat request error", frame_rd);
           else if (frame_rd->len != sizeof(msg->hcc.heatreq))
-            scbi_print_CAN_frame(LL_ERROR, type, "heat request with wrong data len", frame_rd);
+            scbi_print_CAN_frame(LL_INFO, type, "heat request with wrong data len.", frame_rd);
           else
             LOG_EVENT("(%s) Heat request - Source: %s -> %u°C.", type, msg->hcc.heatreq.heatsource ? "Solar" : "Conv.", BYTE2TEMP(msg->hcc.heatreq.raw_temp));
           break;
         case HCC_HEATINGCIRCUIT_STATE1:
-          if (addi->scbi_id.flg_err)
-            LOG_EVENT("(%s) Heat circuit #%u error.", type, frame_rd->data[0]);
-          else if (frame_rd->len < sizeof(msg->hcc.state1))
-            LOG_ERROR("(%s) Heat circuit status 1 msg with wrong data len %u.", type, frame_rd->len);
+          if (frame_rd->len < sizeof(msg->hcc.state1))
+          { // TODO find out what's behind those msgs: 0x10019F85 (prg:85, id:9F, func:01, prot:00, msg:02----EFF----) [1] data:01
+            LOG_INFO("(%s) Heat circuit status 1 with wrong data len %u.", type, frame_rd->len);
+            scbi_print_CAN_frame(LL_INFO, type, "Heat circuit status 1 with wrong data len:", frame_rd);
+          }
           else
             LOG_EVENT ("(%s) Heat circuit #%u Stats 1: state:0x%02X, flow temp (set/act/storage): %u/%u/%u°C.", type, msg->hcc.state1.circuit,
                        msg->hcc.state1.state, BYTE2TEMP(msg->hcc.state1.temp_flowset), BYTE2TEMP(msg->hcc.state1.temp_flow),
