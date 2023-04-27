@@ -1,4 +1,5 @@
 #include <time.h>
+#include <sys/time.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -55,13 +56,15 @@ const char * facility_txt [] = {
 static void log_stdout_stderr(const enum log_level ll, const char * format, va_list ap)
 {
   static char tmp[MAX_LOG_LEN];
+  static char tim[64];
 
   FILE * fd;
-  time_t ts = time(NULL);
-  char * tim = asctime(localtime(&ts));
-  size_t len = strlen(tim);
-  if (len)
-    tim[len - 1] = '\0';
+  struct tm * tm;
+  struct timespec tp;
+
+  clock_gettime(CLOCK_REALTIME, &tp);
+  tm = localtime(&tp.tv_sec);
+  strftime(tim, sizeof(tim), "%d.%m.%y %H:%M:%S",tm);
 
   vsprintf(tmp, format, ap);
 
@@ -74,7 +77,7 @@ static void log_stdout_stderr(const enum log_level ll, const char * format, va_l
     case LL_WARN    : fd = stderr; break;
     default         : fd = stdout; break;
   }
-  fprintf (fd, "[%s][%s] %s\n", tim, level_txt[ll], tmp);
+  fprintf (fd, "[%s.%ld][%s] %s\n", tim, tp.tv_nsec / 1000, log_level_txt[ll], tmp);
 }
 
 

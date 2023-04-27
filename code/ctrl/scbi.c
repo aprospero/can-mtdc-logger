@@ -8,12 +8,14 @@
 #include <net/if.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
+#include <linux/sockios.h>
 #include <time.h>
 #include <errno.h>
 
 #include "ctrl/scbi.h"
 #include "ctrl/com/mqtt.h"
 #include "tool/logger.h"
+#include "tool/timehelp.h"
 
 struct scbi_entity
 {
@@ -35,6 +37,12 @@ struct scbi_handle
   struct mqtt_handle * broker;
   struct scbi_entities entity;
   time_t               now;
+};
+
+struct scbi_frame_buffer
+{
+  struct can_frame frame;
+  struct timeval   tstamp;
 };
 
 int scbi_register_dlg_sensor(struct scbi_handle * hnd, size_t id, enum scbi_dlg_sensor_type type, const char * entity)
@@ -150,23 +158,21 @@ struct scbi_handle * scbi_init (const char *port, void * broker)
 static int scbi_send(struct scbi_handle * hnd, union scbi_address_id id, union scbi_msg_content * data, uint8_t len)
 {
 	int retval;
-	struct can_frame frame;
-	memset(&frame, 0x00, sizeof(frame));
-	frame.can_id = id.address_id;
-	frame.len = len;
-	memcpy(frame.data, data->raw, sizeof(frame.data));
+	struct scbi_frame_buffer frame_wr;
+	memset(&frame_wr, 0x00, sizeof(frame_wr));
+	frame_wr.frame.can_id = id.address_id;
+	frame_wr.frame.len = len;
+	if (len > sizeof(frame_wr.frame.data))
+	  len = sizeof(frame_wr.frame.data);
+	memcpy(frame_wr.frame.data, data->raw, len);
+	gettimeofday(&frame_wr.tstamp, NULL);
 
-	scbi_print_CAN_frame (LL_INFO, "SEND", "Sending", &frame);
+	scbi_print_CAN_frame (LL_INFO, "SEND", "Sending", &frame_wr);
 
-	retval = write(hnd->soc, &frame, sizeof(struct can_frame));
+	retval = write(hnd->soc, &frame_wr.frame, sizeof(struct can_frame));
 	if (retval != sizeof(struct can_frame))
-	{
 		return (-1);
-	}
-	else
-	{
-		return (0);
-	}
+  return len;
 }
 
 void scbi_send_request(struct scbi_handle * hnd)
@@ -206,22 +212,23 @@ static const char* format_raw_CAN_data (struct can_frame *frame_rd)
   return xf;
 }
 
-static void scbi_print_CAN_frame (enum log_level ll, const char * msg_type, const char * txt, struct can_frame *frame_rd)
+static void scbi_print_CAN_frame (enum log_level ll, const char * msg_type, const char * txt, struct scbi_frame_buffer * frame_rd)
 {
   if (log_get_level(ll))
   {
-    union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
-    log_push(ll, "(%s) %s: CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data:%s.", msg_type, txt, addi->address_id,
-             addi->scbi_id.prog, addi->scbi_id.client, addi->scbi_id.func, addi->scbi_id.prot, addi->scbi_id.msg,
-             addi->scbi_id.flg_err ? " ERR" : " ---", addi->scbi_id.flg_eff ? "-EFF" : "----", addi->scbi_id.flg_rtr ? "-RTR" : "----", frame_rd->len,
-             format_raw_CAN_data (frame_rd));
+    union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->frame.can_id;
+    log_push(ll, "(%s) %s: %s CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data:%s.",
+                  msg_type, txt, getTimeValString(frame_rd->tstamp, NULL, NULL, 0), addi->address_id,
+                  addi->scbi_id.prog, addi->scbi_id.client, addi->scbi_id.func, addi->scbi_id.prot, addi->scbi_id.msg,
+                  addi->scbi_id.flg_err ? " ERR" : " ---", addi->scbi_id.flg_eff ? "-EFF" : "----", addi->scbi_id.flg_rtr ? "-RTR" : "----",
+                  frame_rd->frame.len, format_raw_CAN_data (&frame_rd->frame));
   }
 }
 
-static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *frame_rd)
+static void scbi_compute_datalogger (struct scbi_handle *hnd, struct scbi_frame_buffer * frame_rd)
 {
-  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
-  union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->data[0];
+  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->frame.can_id;
+  union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->frame.data[0];
   switch (addi->scbi_id.msg)
   {
     case CAN_MSG_REQUEST:
@@ -238,14 +245,14 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *
           publish_sensor(hnd, msg->dlg.sensor.type, msg->dlg.sensor.id,  msg->dlg.sensor.value);
           break;
         case DLF_RELAY:
-          LOG_EVENT("RELAY%u (%u/%u) -> %u (%s).", msg->dlg.relay.id, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.value, format_raw_CAN_data (frame_rd));
+          LOG_EVENT("RELAY%u (%u/%u) -> %u (%s).", msg->dlg.relay.id, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.value, format_raw_CAN_data (&frame_rd->frame));
           publish_relay(hnd, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.id, msg->dlg.relay.value);
           break;
         case DLG_OVERVIEW:
           char temp[255];
 
           snprintf (temp, sizeof(temp), "overview %u-%u -> %uh/%ukWh.", msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.oview.hours, msg->dlg.oview.heat_yield);
-          log_push(LL_DEBUG,"%-26.26s - (%s)", temp, format_raw_CAN_data (frame_rd));
+          log_push(LL_DEBUG,"%-26.26s - (%s)", temp, format_raw_CAN_data (&frame_rd->frame));
           publish_overview(hnd, msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.relay.value);
           break;
         case DLF_UNDEFINED:
@@ -263,10 +270,10 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct can_frame *
 
 }
 
-static void scbi_compute_controller (struct scbi_handle *hnd, struct can_frame *frame_rd)
+static void scbi_compute_controller (struct scbi_handle *hnd, struct scbi_frame_buffer * frame_rd)
 {
-  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
-  union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->data[0];
+  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->frame.can_id;
+  union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->frame.data[0];
   switch (addi->scbi_id.msg)
   {
     case CAN_MSG_REQUEST:
@@ -302,10 +309,10 @@ static void scbi_compute_controller (struct scbi_handle *hnd, struct can_frame *
   }
 }
 
-static void scbi_compute_hcc (struct scbi_handle *hnd, struct can_frame *frame_rd)
+static void scbi_compute_hcc (struct scbi_handle *hnd, struct scbi_frame_buffer * frame_rd)
 {
-  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
-  union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->data[0];
+  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->frame.can_id;
+  union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->frame.data[0];
   char *type = addi->scbi_id.msg == CAN_MSG_REQUEST ? "REQUEST" : "RESPONSE";
 
   switch (addi->scbi_id.msg)
@@ -319,15 +326,15 @@ static void scbi_compute_hcc (struct scbi_handle *hnd, struct can_frame *frame_r
         case HCC_HEATREQUEST:
           if (addi->scbi_id.flg_err)
             scbi_print_CAN_frame(LL_ERROR, type, "heat request error", frame_rd);
-          else if (frame_rd->len != sizeof(msg->hcc.heatreq))
+          else if (frame_rd->frame.len != sizeof(msg->hcc.heatreq))
             scbi_print_CAN_frame(LL_INFO, type, "heat request with wrong data len.", frame_rd);
           else
             LOG_EVENT("(%s) Heat request - Source: %s -> %u°C.", type, msg->hcc.heatreq.heatsource ? "Solar" : "Conv.", BYTE2TEMP(msg->hcc.heatreq.raw_temp));
           break;
         case HCC_HEATINGCIRCUIT_STATE1:
-          if (frame_rd->len < sizeof(msg->hcc.state1))
+          if (frame_rd->frame.len < sizeof(msg->hcc.state1))
           { // TODO find out what's behind those msgs: 0x10019F85 (prg:85, id:9F, func:01, prot:00, msg:02----EFF----) [1] data:01
-            LOG_INFO("(%s) Heat circuit status 1 with wrong data len %u.", type, frame_rd->len);
+            LOG_INFO("(%s) Heat circuit status 1 with wrong data len %u.", type, frame_rd->frame.len);
             scbi_print_CAN_frame(LL_INFO, type, "Heat circuit status 1 with wrong data len:", frame_rd);
           }
           else
@@ -356,9 +363,9 @@ static void scbi_compute_hcc (struct scbi_handle *hnd, struct can_frame *frame_r
   }
 }
 
-static void scbi_compute_format0 (struct scbi_handle *hnd, struct can_frame *frame_rd)
+static void scbi_compute_format0 (struct scbi_handle *hnd, struct scbi_frame_buffer *frame_rd)
 {
-  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
+  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->frame.can_id;
   switch (addi->scbi_id.prog)
   {
     case PRG_CONTROLLER:
@@ -386,15 +393,16 @@ static void scbi_compute_format0 (struct scbi_handle *hnd, struct can_frame *fra
 /* this is just an example, run in a thread */
 void scbi_update (struct scbi_handle *hnd)
 {
-  struct can_frame        frame_rd;
-  union scbi_address_id * addi = (union scbi_address_id *) &frame_rd.can_id;
-  int                     rx;
+  struct scbi_frame_buffer frame_rd;
+  union scbi_address_id *  addi = (union scbi_address_id *) &frame_rd.frame.can_id;
+  int                      rx;
 
   hnd->read_can_port = 1;
 
   while (hnd->read_can_port)
   {
     struct timeval timeout = { 1, 0 };
+    struct timeval tv;
     fd_set readSet;
     FD_ZERO(&readSet);
     FD_SET(hnd->soc, &readSet);
@@ -406,7 +414,7 @@ void scbi_update (struct scbi_handle *hnd)
       }
       if (FD_ISSET(hnd->soc, &readSet))
       {
-        rx = read (hnd->soc, &frame_rd, sizeof(struct can_frame));
+        rx = read (hnd->soc, &frame_rd.frame, sizeof(struct can_frame));
         if (rx < 0)
         {
           LOG_ERROR("Reading CAN Bus: Posix Error (%i) '%s'.\n", errno, strerror(errno));
@@ -418,7 +426,10 @@ void scbi_update (struct scbi_handle *hnd)
           scbi_print_CAN_frame (LL_ERROR, "FRAME", "too short", &frame_rd);
           continue;
         }
-        if (addi->scbi_id.msg == CAN_MSG_ERROR)
+
+        ioctl(hnd->soc, SIOCGSTAMP, &frame_rd.tstamp);
+
+        if (addi->scbi_id.msg == CAN_MSG_ERROR || addi->scbi_id.flg_err)
           scbi_print_CAN_frame (LL_ERROR, "FRAME", "Frame Error", &frame_rd);
         else
         {

@@ -95,6 +95,16 @@
 			<locationURI>PARENT-1-PROJECT_LOC/code/tool/stringhelp.h</locationURI>
 		</link>
 		<link>
+			<name>code/tool/timehelp.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/code/tool/timehelp.c</locationURI>
+		</link>
+		<link>
+			<name>code/tool/timehelp.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/code/tool/timehelp.h</locationURI>
+		</link>
+		<link>
 			<name>code/ctrl/com/mqtt.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/code/ctrl/com/mqtt.c</locationURI>
