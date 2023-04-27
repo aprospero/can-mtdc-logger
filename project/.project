@@ -47,7 +47,7 @@
 		<link>
 			<name>code/main.c</name>
 			<type>1</type>
-			<locationURI>copy_PARENT/code/main.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/code/main.c</locationURI>
 		</link>
 		<link>
 			<name>code/tool</name>
@@ -67,12 +67,12 @@
 		<link>
 			<name>code/ctrl/scbi.c</name>
 			<type>1</type>
-			<locationURI>copy_PARENT/code/ctrl/scbi.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/code/ctrl/scbi.c</locationURI>
 		</link>
 		<link>
 			<name>code/ctrl/scbi.h</name>
 			<type>1</type>
-			<locationURI>copy_PARENT/code/ctrl/scbi.h</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/code/ctrl/scbi.h</locationURI>
 		</link>
 		<link>
 			<name>code/tool/logger.c</name>
