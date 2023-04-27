@@ -19,6 +19,7 @@ struct scbi_entity
 {
     const char * name;
     int32_t      last_val;
+    time_t       last_tx;
 };
 struct scbi_entities
 {
@@ -33,6 +34,7 @@ struct scbi_handle
   int                  read_can_port;
   struct mqtt_handle * broker;
   struct scbi_entities entity;
+  time_t               now;
 };
 
 int scbi_register_dlg_sensor(struct scbi_handle * hnd, size_t id, enum scbi_dlg_sensor_type type, const char * entity)
@@ -66,52 +68,37 @@ int scbi_register_dlg_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_
   return 0;
 }
 
-
-
-static inline void publish_sensor(struct scbi_handle * hnd, enum scbi_dlg_sensor_type type, size_t id, int32_t value)
+static inline void publish_entity(struct scbi_handle * hnd, const char * type, struct scbi_entity * entity, int32_t value)
 {
-  struct scbi_entity * entity = NULL;
-  if (type >= DST_COUNT)
-    type = DST_UNKNOWN;
-  if (id < SCBI_MAX_SENSORS)
+  if (entity->name && (entity->last_val != value || hnd->now - entity->last_tx > SCBI_REPOST_TIMEOUT_SEC))
   {
-    entity = &hnd->entity.sensor[type][id];
-    if (entity->name && entity->last_val != value)
-    {
-      mqtt_publish(hnd->broker, "sensor", entity->name, value);
-      entity->last_val = value;
-    }
+    mqtt_publish(hnd->broker, type, entity->name, value);
+    entity->last_val = value;
+    entity->last_tx = hnd->now;
   }
 }
 
-static inline void publish_relay(struct scbi_handle * hnd, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, size_t id, int value)
+static inline void publish_sensor(struct scbi_handle * hnd, enum scbi_dlg_sensor_type type, size_t id, int32_t value)
+{
+  if (type >= DST_COUNT)
+    type = DST_UNKNOWN;
+  if (id < SCBI_MAX_SENSORS)
+    publish_entity(hnd, "sensor", &hnd->entity.sensor[type][id], value);
+}
+
+static inline void publish_relay(struct scbi_handle * hnd, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, size_t id, int32_t value)
 {
   struct scbi_entity * entity = NULL;
   if (efct == DRE_DISABLED || efct == DRE_UNSELECTED)
     efct -= DRE_DISABLED - (DRE_COUNT - 2);  /* last two extfuncts (0xFE & 0XFF) are wrapped to the end of the map */
   if (mode < DRM_COUNT && efct < DRE_COUNT && id < SCBI_MAX_RELAYS)
-  {
-    entity = &hnd->entity.relay[mode][efct][id];
-    if (entity->name && entity->last_val != value)
-    {
-      mqtt_publish(hnd->broker, "relay", entity->name, value);
-      entity->last_val = value;
-    }
-  }
+    publish_entity(hnd, "relay", &hnd->entity.relay[mode][efct][id], value);
 }
 
 static inline void publish_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, int value)
 {
-  struct scbi_entity * entity = NULL;
   if (type < DOT_COUNT && mode < DOM_COUNT)
-  {
-    entity = &hnd->entity.oview[type][mode];
-    if (entity->name && entity->last_val != value)
-    {
-      mqtt_publish(hnd->broker, "overview", entity->name, value);
-      entity->last_val = value;
-    }
-  }
+    publish_entity(hnd, "overview", &hnd->entity.oview[type][mode], value);
 }
 
 
@@ -443,6 +430,9 @@ void scbi_update (struct scbi_handle *hnd)
         }
       }
     }
+
+    hnd->now = time(NULL);
+
     if (hnd->broker != NULL)
       mqtt_loop(hnd->broker);
   }

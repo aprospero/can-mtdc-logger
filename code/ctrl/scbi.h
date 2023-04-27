@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define SCBI_REPOST_TIMEOUT_SEC 300 // doublette values are blocked from propagation for 5min.
+
 #define BYTE2TEMP(x) ((uint8_t) (((uint16_t) (x) * 100) / 255))
 #define TEMP2BYTE(x) ((unit8_t) (((uint16_t) (x) * 255) / 100))
 
