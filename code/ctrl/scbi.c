@@ -386,10 +386,12 @@ static void scbi_compute_format0 (struct scbi_handle *hnd, struct can_frame *fra
 /* this is just an example, run in a thread */
 void scbi_update (struct scbi_handle *hnd)
 {
-  struct can_frame frame_rd;
-  union scbi_address_id *addi = (union scbi_address_id*) &frame_rd.can_id;
-  int recvbytes = 0;
+  struct can_frame        frame_rd;
+  union scbi_address_id * addi = (union scbi_address_id *) &frame_rd.can_id;
+  int                     rx;
+
   hnd->read_can_port = 1;
+
   while (hnd->read_can_port)
   {
     struct timeval timeout = { 1, 0 };
@@ -404,33 +406,41 @@ void scbi_update (struct scbi_handle *hnd)
       }
       if (FD_ISSET(hnd->soc, &readSet))
       {
-        recvbytes = read (hnd->soc, &frame_rd, sizeof(struct can_frame));
-        if (recvbytes)
+        rx = read (hnd->soc, &frame_rd, sizeof(struct can_frame));
+        if (rx < 0)
         {
-          if (addi->scbi_id.msg == CAN_MSG_ERROR)
-            scbi_print_CAN_frame (LL_ERROR, "FRAME", "Frame Error", &frame_rd);
-          else
-          {
-            scbi_print_CAN_frame (LL_DEBUG_MORE, "FRAME", "Msg", &frame_rd);
-            switch (addi->scbi_id.prot)
-            {
-              case CAN_PROTO_FORMAT_0:
-                scbi_compute_format0 (hnd, &frame_rd);
-                break; /* CAN Msgs size <= 8 */
-              case CAN_PROTO_FORMAT_BULK:
-                LOG_INFO("Bulk format not supported yet.");
-                break; /* CAN Msgs size >  8 */
-              case CAN_PROTO_FORMAT_UPDATE:
-                LOG_INFO("Updates via CAN not supported yet.");
-                break; /* CAN Msg transmitting firmware update */
-              default:
-                LOG_INFO("Unknown protocol: 0x%02X.", addi->scbi_id.prot);
-                break;
-            }
-          }
-          fflush (stdout);
-          fflush (stderr);
+          LOG_ERROR("Reading CAN Bus: Posix Error (%i) '%s'.\n", errno, strerror(errno));
+          continue;
         }
+
+        if (rx < sizeof(struct can_frame))
+        {
+          scbi_print_CAN_frame (LL_ERROR, "FRAME", "too short", &frame_rd);
+          continue;
+        }
+        if (addi->scbi_id.msg == CAN_MSG_ERROR)
+          scbi_print_CAN_frame (LL_ERROR, "FRAME", "Frame Error", &frame_rd);
+        else
+        {
+          scbi_print_CAN_frame (LL_DEBUG_MORE, "FRAME", "Msg", &frame_rd);
+          switch (addi->scbi_id.prot)
+          {
+            case CAN_PROTO_FORMAT_0:
+              scbi_compute_format0 (hnd, &frame_rd);
+              break; /* CAN Msgs size <= 8 */
+            case CAN_PROTO_FORMAT_BULK:
+              LOG_INFO("Bulk format not supported yet.");
+              break; /* CAN Msgs size >  8 */
+            case CAN_PROTO_FORMAT_UPDATE:
+              LOG_INFO("Updates via CAN not supported yet.");
+              break; /* CAN Msg transmitting firmware update */
+            default:
+              LOG_INFO("Unknown protocol: 0x%02X.", addi->scbi_id.prot);
+              break;
+          }
+        }
+        fflush (stdout);
+        fflush (stderr);
       }
     }
 
