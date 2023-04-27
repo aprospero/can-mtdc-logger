@@ -213,7 +213,7 @@ static void scbi_print_CAN_frame (enum log_level ll, const char * msg_type, cons
     union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->can_id;
     log_push(ll, "(%s) %s: CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data:%s.", msg_type, txt, addi->address_id,
              addi->scbi_id.prog, addi->scbi_id.client, addi->scbi_id.func, addi->scbi_id.prot, addi->scbi_id.msg,
-             addi->scbi_id.flg_err ? " ERR" : "", addi->scbi_id.flg_eff ? " EFF" : "", addi->scbi_id.flg_rtr ? " RTR" : "", frame_rd->len,
+             addi->scbi_id.flg_err ? " ERR" : " ---", addi->scbi_id.flg_eff ? "-EFF" : "----", addi->scbi_id.flg_rtr ? "-RTR" : "----", frame_rd->len,
              format_raw_CAN_data (frame_rd));
   }
 }
