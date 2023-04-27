@@ -1,4 +1,5 @@
 #include <string.h>
+#include <ctype.h>
 
 int stricmp(const char * str1, const char * str2)
 {
