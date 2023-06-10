@@ -321,7 +321,7 @@ struct scbi_avail_sensor_req_msg
   uint8_t bus;                   /* (1wire/hts,.. -> networkTypes.h) */
   uint8_t type;                  /* (-> networkTypes.h)              */
   uint8_t remote_id;             /* which is requested               */
-};
+}__attribute__((packed));
 
 
 
