@@ -38,13 +38,13 @@ enum log_facility
 #define MAX_LOG_LEN 256
 #endif
 
-#ifndef LOG_INFO /* syslog uses similar macro names for log levels */
-#define LOG_EVENT(FORMAT, ...) log_push(LL_EVENT, FORMAT, ##__VA_ARGS__)
-#define LOG_INFO(FORMAT, ... ) log_push(LL_INFO, FORMAT, ##__VA_ARGS__)
-#define LOG_WARN(FORMAT, ...) log_push(LL_WARN, FORMAT, ##__VA_ARGS__)
-#define LOG_ERROR(FORMAT, ...) log_push(LL_ERROR, FORMAT, ##__VA_ARGS__)
-#define LOG_CRITICAL(FORMAT, ...) log_push(LL_CRITICAL, FORMAT, ##__VA_ARGS__)
-#endif
+#define LG_DEBUG(FORMAT, ...) log_push(LL_DEBUG, FORMAT, ##__VA_ARGS__)
+#define LG_EVENT(FORMAT, ...) log_push(LL_EVENT, FORMAT, ##__VA_ARGS__)
+#define LG_INFO(FORMAT, ... ) log_push(LL_INFO, FORMAT, ##__VA_ARGS__)
+#define LG_WARN(FORMAT, ...) log_push(LL_WARN, FORMAT, ##__VA_ARGS__)
+#define LG_ERROR(FORMAT, ...) log_push(LL_ERROR, FORMAT, ##__VA_ARGS__)
+#define LG_CRITICAL(FORMAT, ...) log_push(LL_CRITICAL, FORMAT, ##__VA_ARGS__)
+
 
 
 // standard stuff that should be put in a distinct header some day...

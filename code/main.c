@@ -12,7 +12,7 @@
 
 void clean_exit_on_sig(int sig_num)
 {
-  LOG_CRITICAL("Signal %d received", sig_num);
+  LG_CRITICAL("Signal %d received", sig_num);
   exit(0);
 }
 
