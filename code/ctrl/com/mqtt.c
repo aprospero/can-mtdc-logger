@@ -97,13 +97,35 @@ init_mqtt_fail:
   return NULL;
 }
 
-void mqtt_publish(struct mqtt_handle * hnd, const char * type, const char * entity, int value)
+
+void mqtt_publish_formatted(struct mqtt_handle * hnd, const char * type, const char * entity, const char * fmt, ...)
 {
+  static char tmp_val[64];
   static char tmp_msg[255];
+  va_list ap;
   int result;
-  snprintf(tmp_msg, sizeof(tmp_msg), "%s,type=%s value=%d", entity, type, value);
-  LG_INFO("MQTT - publishing in topic %s: %s.", hnd->topic, tmp_msg);
+
+  va_start(ap, fmt);
+  result = vsnprintf(tmp_val, sizeof(tmp_val), fmt, ap);
+  va_end(ap);
+
+  if (result >= sizeof(tmp_val))
+  {
+    LG_ERROR("MQTT - publishing for %s:%s failed - format string exceeded size of %d chars.", type, entity, sizeof(tmp_val));
+    return;
+  }
+
+  result = snprintf(tmp_msg, sizeof(tmp_msg), "%s,type=%s value=%s", entity, type, tmp_val);
+
+  if (result >= sizeof(tmp_msg))
+  {
+    LG_ERROR("MQTT - publishing for %s:%s failed - output string exceeded size of %d chars.", type, entity, sizeof(tmp_msg));
+    return;
+  }
+
+  LG_DEBUG("MQTT - publishing in topic %s: %s.", hnd->topic, tmp_msg);
   result = mosquitto_publish(hnd->mosq, NULL, hnd->topic, strlen(tmp_msg), tmp_msg, 0, FALSE);
+
   switch (result)
   {
     case MOSQ_ERR_SUCCESS            : break;
@@ -119,6 +141,12 @@ void mqtt_publish(struct mqtt_handle * hnd, const char * type, const char * enti
       break;
   }
 }
+
+void mqtt_publish(struct mqtt_handle * hnd, const char * type, const char * entity, int value)
+{
+  mqtt_publish_formatted(hnd, type, entity, "%d", value);
+}
+
 
 void mqtt_loop(struct mqtt_handle * hnd, int timeout)
 {
