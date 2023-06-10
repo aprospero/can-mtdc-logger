@@ -7,7 +7,6 @@
 #include <string.h>
 #include <mosquitto.h>
 
-#include "ctrl/scbi.h"
 #include "tool/logger.h"
 
 struct mqtt_handle
@@ -32,7 +31,7 @@ void on_disconnect(struct mosquitto *mosq, void *userdata, int mid)
 }
 
 
-struct mqtt_handle * mqtt_init(const char * topic)
+struct mqtt_handle * mqtt_init(const char * client_id, const char * topic)
 {
   int result;
   int doLog = TRUE;
@@ -50,7 +49,7 @@ struct mqtt_handle * mqtt_init(const char * topic)
   mosquitto_lib_init();
   LG_DEBUG("Initialized MQTT library.");
 
-  hnd->mosq = mosquitto_new("cansorella", TRUE, NULL);
+  hnd->mosq = mosquitto_new(client_id, TRUE, NULL);
   if (hnd->mosq == NULL)
   {
     LG_CRITICAL("MQTT - Could not instantiate a broker socket.");
@@ -59,7 +58,7 @@ struct mqtt_handle * mqtt_init(const char * topic)
 
   LG_DEBUG("Instantiated a broker socket.");
 
-  result = mosquitto_username_pw_set(hnd->mosq,"cansorella","cansorella");
+  result = mosquitto_username_pw_set(hnd->mosq, client_id, client_id);
   if (result != MOSQ_ERR_SUCCESS)
   {
     LG_CRITICAL("MQTT - Could not set broker user: %d\n", result);

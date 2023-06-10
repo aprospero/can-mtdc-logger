@@ -38,7 +38,7 @@ int main(int argc, char * argv[])
   signal(SIGTERM, clean_exit_on_sig);
   signal(SIGPIPE, SIG_IGN);
 
-  mqtt = mqtt_init("MTDC");
+  mqtt = mqtt_init("cansorella", "MTDC");
   if (mqtt)
   {
     scbi = scbi_init("can0", mqtt);
