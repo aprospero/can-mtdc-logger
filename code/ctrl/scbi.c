@@ -458,7 +458,7 @@ void scbi_update (struct scbi_handle *hnd)
     hnd->now = time(NULL);
 
     if (hnd->broker != NULL)
-      mqtt_loop(hnd->broker);
+      mqtt_loop(hnd->broker, -1);
   }
 }
 
