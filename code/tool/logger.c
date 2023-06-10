@@ -137,18 +137,23 @@ void log_init(const char * ident, enum log_facility facility, enum log_level def
 
 void log_set_level(enum log_level ll, size_t active)
 {
+  if (ll < LL_NONE)
+    return;
   if (active)
   {
+    if (ll >= ARRLEN(log.level))
+      ll = (enum log_level) (LL_COUNT - 1);
     do {
       log.level[ll] = TRUE;
     } while (ll-- != LL_NONE);
   }
-  else log.level[ll] = FALSE;
+  else if (ll < ARRLEN(log.level))
+    log.level[ll] = FALSE;
 }
 
 int log_get_level(enum log_level ll)
 {
-  return log.level[ll];
+  return ll < 0 || ll >= ARRLEN(log.level) ? FALSE : log.level[ll];
 }
 
 const char * log_get_level_name(enum log_level ll, int do_fulltext)
