@@ -14,10 +14,7 @@ int parseArgs(int argc, char * argv[], struct cansorella_config * config)
   int err = 0, idx, opt;
   optind = 1;
 
-  config->prg_name = argv[0];
-
-  config->prg_name = strrchr(config->prg_name, '/');
-
+  config->prg_name = strrchr(argv[0], '/');
   if (config->prg_name == NULL)
     config->prg_name = argv[0];
   else
