@@ -5,7 +5,7 @@
 
 enum log_level
 {
-  LL_NONE,
+  LL_NONE,       /* always printed */
   LL_CRITICAL,   /* application severed -> exit */
   LL_ERROR,      /* unwanted event but application can handle */
   LL_WARN,       /* unexpected event with potential to lead to errors */
@@ -38,13 +38,13 @@ enum log_facility
 #define MAX_LOG_LEN 256
 #endif
 
-#ifndef LOG_INFO /* syslog uses similar macro names for log levels */
-#define LOG_EVENT(FORMAT, ...) log_push(LL_EVENT, FORMAT, ##__VA_ARGS__)
-#define LOG_INFO(FORMAT, ... ) log_push(LL_INFO, FORMAT, ##__VA_ARGS__)
-#define LOG_WARN(FORMAT, ...) log_push(LL_WARN, FORMAT, ##__VA_ARGS__)
-#define LOG_ERROR(FORMAT, ...) log_push(LL_ERROR, FORMAT, ##__VA_ARGS__)
-#define LOG_CRITICAL(FORMAT, ...) log_push(LL_CRITICAL, FORMAT, ##__VA_ARGS__)
-#endif
+#define LG_DEBUG(FORMAT, ...) log_push(LL_DEBUG, FORMAT, ##__VA_ARGS__)
+#define LG_EVENT(FORMAT, ...) log_push(LL_EVENT, FORMAT, ##__VA_ARGS__)
+#define LG_INFO(FORMAT, ... ) log_push(LL_INFO, FORMAT, ##__VA_ARGS__)
+#define LG_WARN(FORMAT, ...) log_push(LL_WARN, FORMAT, ##__VA_ARGS__)
+#define LG_ERROR(FORMAT, ...) log_push(LL_ERROR, FORMAT, ##__VA_ARGS__)
+#define LG_CRITICAL(FORMAT, ...) log_push(LL_CRITICAL, FORMAT, ##__VA_ARGS__)
+
 
 
 // standard stuff that should be put in a distinct header some day...
@@ -66,14 +66,14 @@ enum log_facility
 #endif
 
 void log_init(const char * ident, enum log_facility facility, enum log_level ll);
-void log_set_level(enum log_level ll, size_t active);
-int  log_get_level(enum log_level ll);
+void log_set_level_state(enum log_level ll, size_t active);
+int  log_get_level_state(enum log_level ll);
 
 enum log_level log_get_level_no(const char * level);
 enum log_facility log_get_facility(const char * facility);
 
-const char * log_get_level_name(enum log_level ll);
-const char * log_get_facility_name(size_t id);
+const char * log_get_level_name(enum log_level ll, int do_fulltext);
+const char * log_get_facility_name(enum log_facility lf);
 
 void log_push(const enum log_level ll, const char * format, ...) __attribute__((format(printf, 2, 3)));
 

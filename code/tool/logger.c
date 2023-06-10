@@ -1,4 +1,5 @@
 #include <time.h>
+#include <sys/time.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,7 +16,7 @@ static struct logger_state
   logfct        fct;
 } log;
 
-const char * level_txt[] = {
+const char * log_level_txt[] = {
    "NONE",
    "CRIT ",
    "ERROR",
@@ -27,7 +28,7 @@ const char * level_txt[] = {
    "DBGMX"
 };
 
-const char * level_fulltxt[]  = {
+const char * log_level_fulltxt[]  = {
     "NONE",
     "CRITICAL",
     "ERROR",
@@ -39,7 +40,7 @@ const char * level_fulltxt[]  = {
     "DEBUG_MAX"
  };
 
-const char * facility_txt [] = {
+const char * log_facility_txt [] = {
   "stdout" ,
   "user"   ,
   "local0" ,
@@ -55,13 +56,15 @@ const char * facility_txt [] = {
 static void log_stdout_stderr(const enum log_level ll, const char * format, va_list ap)
 {
   static char tmp[MAX_LOG_LEN];
+  static char tim[64];
 
   FILE * fd;
-  time_t ts = time(NULL);
-  char * tim = asctime(localtime(&ts));
-  size_t len = strlen(tim);
-  if (len)
-    tim[len - 1] = '\0';
+  struct tm * tm;
+  struct timespec tp;
+
+  clock_gettime(CLOCK_REALTIME, &tp);
+  tm = localtime(&tp.tv_sec);
+  strftime(tim, sizeof(tim), "%d.%m.%y %H:%M:%S",tm);
 
   vsprintf(tmp, format, ap);
 
@@ -74,7 +77,7 @@ static void log_stdout_stderr(const enum log_level ll, const char * format, va_l
     case LL_WARN    : fd = stderr; break;
     default         : fd = stdout; break;
   }
-  fprintf (fd, "[%s][%s] %s\n", tim, level_txt[ll], tmp);
+  fprintf (fd, "[%s.%ld][%s] %s\n", tim, tp.tv_nsec / 1000, log_level_txt[ll], tmp);
 }
 
 
@@ -113,7 +116,7 @@ const int lf_translation[LF_COUNT] =
 void log_init(const char * ident, enum log_facility facility, enum log_level default_ll)
 {
   memset(&log,0,sizeof(log));
-  log_set_level(default_ll, TRUE);
+  log_set_level_state(default_ll, TRUE);
 
   if (facility > LF_STDOUT && facility < LF_COUNT && ident)
   {
@@ -124,7 +127,7 @@ void log_init(const char * ident, enum log_facility facility, enum log_level def
   {
     if (facility != LF_STDOUT)
     {
-      const char * fac_name = facility >= LF_COUNT ? "invalid" : facility_txt[facility];
+      const char * fac_name = facility >= LF_COUNT ? "invalid" : log_facility_txt[facility];
       const char * ident_name = ident == NULL ? "unknown" : ident;
       log_push(LL_WARN, "Logging via STDOUT/STDERR. %s facility and %s ident not feasible.", fac_name, ident_name);
     }
@@ -132,34 +135,39 @@ void log_init(const char * ident, enum log_facility facility, enum log_level def
   }
 }
 
-void log_set_level(enum log_level ll, size_t active)
+void log_set_level_state(enum log_level ll, size_t active)
 {
+  if (ll < LL_NONE)
+    return;
   if (active)
   {
-    log.level[ll] = TRUE;
-    for (--ll; ll > LL_NONE; ll--)
+    if (ll >= ARRLEN(log.level))
+      ll = (enum log_level) (LL_COUNT - 1);
+    do {
       log.level[ll] = TRUE;
+    } while (ll-- != LL_NONE);
   }
-  else log.level[ll] = FALSE;
+  else if (ll < ARRLEN(log.level))
+    log.level[ll] = FALSE;
 }
 
-int log_get_level(enum log_level ll)
+int log_get_level_state(enum log_level ll)
 {
-  return log.level[ll];
+  return ll < 0 || ll >= ARRLEN(log.level) ? FALSE : log.level[ll];
 }
 
-const char * log_get_level_name(enum log_level ll)
+const char * log_get_level_name(enum log_level ll, int do_fulltext)
 {
-  if (ll > 0 && ll < ARRLEN(level_fulltxt))
-    return level_fulltxt[ll];
+  if (ll > 0 && ll < ARRLEN(log_level_fulltxt))
+    return do_fulltext ? log_level_fulltxt[ll] : log_level_txt[ll];
   return NULL;
 }
 
 enum log_level log_get_level_no(const char * level)
 {
-  for (int i = 0; i < ARRLEN(level_fulltxt); i++)
+  for (int i = 0; i < ARRLEN(log_level_fulltxt); i++)
   {
-    if (stricmp(level_fulltxt[i], level) == 0)
+    if (stricmp(log_level_fulltxt[i], level) == 0)
       return (enum log_level) i;
   }
   return LL_NONE;
@@ -167,9 +175,9 @@ enum log_level log_get_level_no(const char * level)
 
 enum log_facility log_get_facility(const char * facility)
 {
-  for (int i = 0; i < ARRLEN(facility_txt); i++)
+  for (int i = 0; i < ARRLEN(log_facility_txt); i++)
   {
-    if (stricmp(facility_txt[i], facility) == 0)
+    if (stricmp(log_facility_txt[i], facility) == 0)
       return (enum log_facility) i;
   }
   return LF_COUNT;
@@ -177,8 +185,8 @@ enum log_facility log_get_facility(const char * facility)
 
 const char * log_get_facility_name(enum log_facility lf)
 {
-  if  (lf > 0 && lf < ARRLEN(facility_txt))
-    return facility_txt[lf];
+  if  (lf > 0 && lf < ARRLEN(log_facility_txt))
+    return log_facility_txt[lf];
   return NULL;
 }
 
