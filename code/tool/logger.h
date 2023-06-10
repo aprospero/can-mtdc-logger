@@ -66,8 +66,8 @@ enum log_facility
 #endif
 
 void log_init(const char * ident, enum log_facility facility, enum log_level ll);
-void log_set_level(enum log_level ll, size_t active);
-int  log_get_level(enum log_level ll);
+void log_set_level_state(enum log_level ll, size_t active);
+int  log_get_level_state(enum log_level ll);
 
 enum log_level log_get_level_no(const char * level);
 enum log_facility log_get_facility(const char * facility);

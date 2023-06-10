@@ -214,7 +214,7 @@ static const char* format_raw_CAN_data (struct can_frame *frame_rd)
 
 static void scbi_print_CAN_frame (enum log_level ll, const char * msg_type, const char * txt, struct scbi_frame_buffer * frame_rd)
 {
-  if (log_get_level(ll))
+  if (log_get_level_state(ll))
   {
     union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->frame.can_id;
     log_push(ll, "(%s) %s: %s CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data:%s.",

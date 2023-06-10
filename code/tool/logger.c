@@ -116,7 +116,7 @@ const int lf_translation[LF_COUNT] =
 void log_init(const char * ident, enum log_facility facility, enum log_level default_ll)
 {
   memset(&log,0,sizeof(log));
-  log_set_level(default_ll, TRUE);
+  log_set_level_state(default_ll, TRUE);
 
   if (facility > LF_STDOUT && facility < LF_COUNT && ident)
   {
@@ -135,7 +135,7 @@ void log_init(const char * ident, enum log_facility facility, enum log_level def
   }
 }
 
-void log_set_level(enum log_level ll, size_t active)
+void log_set_level_state(enum log_level ll, size_t active)
 {
   if (ll < LL_NONE)
     return;
@@ -151,7 +151,7 @@ void log_set_level(enum log_level ll, size_t active)
     log.level[ll] = FALSE;
 }
 
-int log_get_level(enum log_level ll)
+int log_get_level_state(enum log_level ll)
 {
   return ll < 0 || ll >= ARRLEN(log.level) ? FALSE : log.level[ll];
 }
