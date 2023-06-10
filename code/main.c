@@ -8,6 +8,7 @@
 #include "ctrl/com/mqtt.h"
 #include "tool/logger.h"
 #include "args.h"
+#include "version.h"
 
 
 void clean_exit_on_sig(int sig_num)
@@ -25,6 +26,11 @@ int main(int argc, char * argv[])
   parseArgs(argc, argv, &config);
 
   log_init(config.prg_name, config.log_facility, config.log_level);
+
+  log_push(LL_NONE, "##########################################################################");
+  log_push(LL_NONE, "Starting %s "APP_VERSION" - on:%s, LogFacility:%s Level:%s.",
+                       config.prg_name, config.can_device, log_get_facility_name(config.log_facility), log_get_level_name(config.log_level, TRUE));
+  log_push(LL_NONE, "##########################################################################");
 
   signal(SIGABRT, clean_exit_on_sig);
   signal(SIGINT,  clean_exit_on_sig);
