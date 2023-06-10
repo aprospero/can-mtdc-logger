@@ -13,6 +13,7 @@ struct mqtt_handle
 {
     const char       *topic;
     struct mosquitto *mosq;
+    int               qos;
 };
 
 
@@ -31,7 +32,7 @@ void on_disconnect(struct mosquitto *mosq, void *userdata, int mid)
 }
 
 
-struct mqtt_handle * mqtt_init(const char * client_id, const char * topic)
+struct mqtt_handle * mqtt_init(const char * client_id, const char * topic, int qos)
 {
   int result;
   int doLog = TRUE;
@@ -46,6 +47,7 @@ struct mqtt_handle * mqtt_init(const char * client_id, const char * topic)
   }
 
   hnd->topic = topic;
+  hnd->qos = qos;
   mosquitto_lib_init();
   LG_DEBUG("Initialized MQTT library.");
 
@@ -124,7 +126,7 @@ void mqtt_publish_formatted(struct mqtt_handle * hnd, const char * type, const c
   }
 
   LG_DEBUG("MQTT - publishing in topic %s: %s.", hnd->topic, tmp_msg);
-  result = mosquitto_publish(hnd->mosq, NULL, hnd->topic, strlen(tmp_msg), tmp_msg, 0, FALSE);
+  result = mosquitto_publish(hnd->mosq, NULL, hnd->topic, strlen(tmp_msg), tmp_msg, hnd->qos, FALSE);
 
   switch (result)
   {
