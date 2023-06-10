@@ -139,9 +139,9 @@ void log_set_level(enum log_level ll, size_t active)
 {
   if (active)
   {
-    log.level[ll] = TRUE;
-    for (--ll; ll > LL_NONE; ll--)
+    do {
       log.level[ll] = TRUE;
+    } while (ll-- != LL_NONE);
   }
   else log.level[ll] = FALSE;
 }

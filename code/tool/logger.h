@@ -5,7 +5,7 @@
 
 enum log_level
 {
-  LL_NONE,
+  LL_NONE,       /* always printed */
   LL_CRITICAL,   /* application severed -> exit */
   LL_ERROR,      /* unwanted event but application can handle */
   LL_WARN,       /* unexpected event with potential to lead to errors */
