@@ -88,7 +88,7 @@ ON_HELP:
   fprintf(stdout, "  -d: CAN bus device. Default is: " DEFAULT_CAN_DEVICE "\n");
   fprintf(stdout, "  -v: verbosity information. Available log levels:\n");
   for (idx = 1; idx < LL_COUNT; idx++)
-    fprintf(stdout, "%s%s%s", log_get_level_name((enum log_level) idx), idx == DEFAULT_LOG_LEVEL ? " (default)" :  "",  idx < LL_COUNT - 1 ? (idx - 1) % 8 == 7 ? ",\n" : ", " : ".\n");
+    fprintf(stdout, "%s%s%s", log_get_level_name((enum log_level) idx, TRUE), idx == DEFAULT_LOG_LEVEL ? " (default)" :  "",  idx < LL_COUNT - 1 ? (idx - 1) % 8 == 7 ? ",\n" : ", " : ".\n");
   fprintf(stdout, "  -f: Log Facility. Available log facilities:\n");
   for (idx = 1; idx < LF_COUNT; idx++)
     fprintf(stdout, "%s%s%s", log_get_facility_name((enum log_facility) idx), idx == DEFAULT_LOG_FACILITY ? " (default)" :  "", idx < LF_COUNT - 1 ? idx % 8 == 7 ? ",\n" : ", " : ".\n");
