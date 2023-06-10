@@ -1,0 +1,3 @@
+[submodule "code/linuxtools"]
+	path = code/linuxtools
+	url = https://github.com/aprospero/linuxtools.git
