@@ -5,8 +5,8 @@
 #include <signal.h>
 
 #include "ctrl/scbi.h"
-#include "ctrl/com/mqtt.h"
-#include "tool/logger.h"
+#include "linuxtools/ctrl/com/mqtt.h"
+#include "linuxtools/ctrl/logger.h"
 #include "args.h"
 #include "version.h"
 

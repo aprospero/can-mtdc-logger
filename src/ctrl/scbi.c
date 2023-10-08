@@ -13,9 +13,9 @@
 #include <errno.h>
 
 #include "ctrl/scbi.h"
-#include "ctrl/com/mqtt.h"
-#include "tool/logger.h"
-#include "timehelp.h"
+#include "linuxtools/ctrl/com/mqtt.h"
+#include "linuxtools/ctrl/logger.h"
+#include "linuxtools/timehelp.h"
 
 struct scbi_entity
 {

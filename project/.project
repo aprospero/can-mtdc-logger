@@ -25,115 +25,104 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>code</name>
+			<name>src</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>code/args.c</name>
+			<name>src/args.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/args.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/args.c</locationURI>
 		</link>
 		<link>
-			<name>code/args.h</name>
+			<name>src/args.h</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/args.h</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/args.h</locationURI>
 		</link>
 		<link>
-			<name>code/ctrl</name>
+			<name>src/ctrl</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>code/linuxtools</name>
+			<name>src/linuxtools</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>code/main.c</name>
+			<name>src/main.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/main.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/main.c</locationURI>
 		</link>
 		<link>
-			<name>code/version.h</name>
+			<name>src/version.h</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/version.h</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/version.h</locationURI>
 		</link>
 		<link>
-			<name>code/ctrl/com</name>
+			<name>src/ctrl/scbi.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi.c</locationURI>
+		</link>
+		<link>
+			<name>src/ctrl/scbi.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi.h</locationURI>
+		</link>
+		<link>
+			<name>src/linuxtools/ctrl</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>code/ctrl/scbi.c</name>
+			<name>src/linuxtools/stringhelp.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/ctrl/scbi.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/stringhelp.c</locationURI>
 		</link>
 		<link>
-			<name>code/ctrl/scbi.h</name>
+			<name>src/linuxtools/stringhelp.h</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/ctrl/scbi.h</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/stringhelp.h</locationURI>
 		</link>
 		<link>
-			<name>code/linuxtools/src</name>
+			<name>src/linuxtools/stuff.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/stuff.h</locationURI>
+		</link>
+		<link>
+			<name>src/linuxtools/timehelp.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/timehelp.c</locationURI>
+		</link>
+		<link>
+			<name>src/linuxtools/timehelp.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/timehelp.h</locationURI>
+		</link>
+		<link>
+			<name>src/linuxtools/ctrl/com</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>code/ctrl/com/mqtt.c</name>
+			<name>src/linuxtools/ctrl/logger.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/linuxtools/src/ctrl/com/mqtt.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/ctrl/logger.c</locationURI>
 		</link>
 		<link>
-			<name>code/ctrl/com/mqtt.h</name>
+			<name>src/linuxtools/ctrl/logger.h</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/linuxtools/src/ctrl/com/mqtt.h</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/ctrl/logger.h</locationURI>
 		</link>
 		<link>
-			<name>code/linuxtools/src/stringhelp.c</name>
+			<name>src/linuxtools/ctrl/com/mqtt.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/linuxtools/src/stringhelp.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/ctrl/com/mqtt.c</locationURI>
 		</link>
 		<link>
-			<name>code/linuxtools/src/stringhelp.h</name>
+			<name>src/linuxtools/ctrl/com/mqtt.h</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/linuxtools/src/stringhelp.h</locationURI>
-		</link>
-		<link>
-			<name>code/linuxtools/src/stuff.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/linuxtools/src/stuff.h</locationURI>
-		</link>
-		<link>
-			<name>code/linuxtools/src/timehelp.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/linuxtools/src/timehelp.c</locationURI>
-		</link>
-		<link>
-			<name>code/linuxtools/src/timehelp.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/linuxtools/src/timehelp.h</locationURI>
-		</link>
-		<link>
-			<name>code/linuxtools/src/tool</name>
-			<type>2</type>
-			<locationURI>virtual:/virtual</locationURI>
-		</link>
-		<link>
-			<name>code/linuxtools/src/tool/logger.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/linuxtools/src/tool/logger.c</locationURI>
-		</link>
-		<link>
-			<name>code/linuxtools/src/tool/logger.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/code/linuxtools/src/tool/logger.h</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/ctrl/com/mqtt.h</locationURI>
 		</link>
 	</linkedResources>
-	<variableList>
-		<variable>
-			<name>copy_PARENT</name>
-			<value>$%7BPARENT-4-PROJECT_LOC%7D/Repositories/git/can-mtdc-logger</value>
-		</variable>
-	</variableList>
 </projectDescription>
