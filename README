@@ -2,9 +2,8 @@ This tool allows propagating several values via MQTT from the following device:
 
 - SOREL MTDCv5
 
-Other devices may work as well.
+Other devices from SOREL may work as well.
 
 CAN addresses are taken from SOREL CAN BUS Interface (SCBI) documentation. Many Thanks to the superb suppport at sorel.de, namely international technical supporter Rhona Mackay who always patiently answered any question/request!
 
 For further info about this project have a look into the wiki
-
