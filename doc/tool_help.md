@@ -2,7 +2,7 @@
 
 ###### Usage:
 
-    cansorella [-hV] [-d <can-device>] [-v <log level>] [-f log facility]
+    cansorella [-hV] [-d \<can-device\>] [-v \<log level\>] [-f log facility]
 
 ###### Options:
 
