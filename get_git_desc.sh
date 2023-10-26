@@ -2,7 +2,7 @@
 
 cd "${0%/*}"
 
-fname="../src/version.h"
+fname="src/version.h"
 
 git_desc=$(git describe --abbrev=8 --dirty --always --tags)
 
