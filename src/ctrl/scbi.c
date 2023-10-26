@@ -13,8 +13,8 @@
 #include <errno.h>
 
 #include "ctrl/scbi.h"
-#include "linuxtools/ctrl/logger.h"
-#include "linuxtools/timehelp.h"
+#include "ctrl/logger.h"
+#include "timehelp.h"
 
 #define BYTE2TEMP(x) ((uint8_t) (((uint16_t) (x) * 100) / 255))
 #define TEMP2BYTE(x) ((unit8_t) (((uint16_t) (x) * 255) / 100))

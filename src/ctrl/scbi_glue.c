@@ -16,9 +16,9 @@
 #include <errno.h>
 
 #include "ctrl/scbi_api.h"
-#include "linuxtools/ctrl/com/mqtt.h"
-#include "linuxtools/ctrl/logger.h"
-#include "linuxtools/timehelp.h"
+#include "ctrl/com/mqtt.h"
+#include "ctrl/logger.h"
+#include "timehelp.h"
 
 struct scbi_handle
 {

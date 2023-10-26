@@ -90,59 +90,64 @@
 			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi_param.c</locationURI>
 		</link>
 		<link>
-			<name>src/linuxtools/ctrl</name>
+			<name>src/linuxtools/src</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>src/linuxtools/stringhelp.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/stringhelp.c</locationURI>
-		</link>
-		<link>
-			<name>src/linuxtools/stringhelp.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/stringhelp.h</locationURI>
-		</link>
-		<link>
-			<name>src/linuxtools/stuff.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/stuff.h</locationURI>
-		</link>
-		<link>
-			<name>src/linuxtools/timehelp.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/timehelp.c</locationURI>
-		</link>
-		<link>
-			<name>src/linuxtools/timehelp.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/timehelp.h</locationURI>
-		</link>
-		<link>
-			<name>src/linuxtools/ctrl/com</name>
+			<name>src/linuxtools/src/ctrl</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>src/linuxtools/ctrl/logger.c</name>
+			<name>src/linuxtools/src/stringhelp.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/ctrl/logger.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/src/stringhelp.c</locationURI>
 		</link>
 		<link>
-			<name>src/linuxtools/ctrl/logger.h</name>
+			<name>src/linuxtools/src/stringhelp.h</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/ctrl/logger.h</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/src/stringhelp.h</locationURI>
 		</link>
 		<link>
-			<name>src/linuxtools/ctrl/com/mqtt.c</name>
+			<name>src/linuxtools/src/stuff.h</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/ctrl/com/mqtt.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/src/stuff.h</locationURI>
 		</link>
 		<link>
-			<name>src/linuxtools/ctrl/com/mqtt.h</name>
+			<name>src/linuxtools/src/timehelp.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/ctrl/com/mqtt.h</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/src/timehelp.c</locationURI>
+		</link>
+		<link>
+			<name>src/linuxtools/src/timehelp.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/src/timehelp.h</locationURI>
+		</link>
+		<link>
+			<name>src/linuxtools/src/ctrl/com</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>src/linuxtools/src/ctrl/logger.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/src/ctrl/logger.c</locationURI>
+		</link>
+		<link>
+			<name>src/linuxtools/src/ctrl/logger.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/src/ctrl/logger.h</locationURI>
+		</link>
+		<link>
+			<name>src/linuxtools/src/ctrl/com/mqtt.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/src/ctrl/com/mqtt.c</locationURI>
+		</link>
+		<link>
+			<name>src/linuxtools/src/ctrl/com/mqtt.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/linuxtools/src/ctrl/com/mqtt.h</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

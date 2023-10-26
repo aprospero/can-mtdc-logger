@@ -5,8 +5,8 @@
 #include <signal.h>
 
 #include "ctrl/scbi_glue.h"
-#include "linuxtools/ctrl/com/mqtt.h"
-#include "linuxtools/ctrl/logger.h"
+#include "ctrl/com/mqtt.h"
+#include "ctrl/logger.h"
 #include "args.h"
 #include "version.h"
 

@@ -1,7 +1,7 @@
 #ifndef _H_ARGS
 #define _H_ARGS
 
-#include "linuxtools/ctrl/logger.h"
+#include "ctrl/logger.h"
 
 
 #define DEFAULT_LOG_FACILITY LF_LOCAL0
