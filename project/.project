@@ -70,6 +70,26 @@
 			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi.h</locationURI>
 		</link>
 		<link>
+			<name>src/ctrl/scbi_api.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi_api.h</locationURI>
+		</link>
+		<link>
+			<name>src/ctrl/scbi_glue.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi_glue.c</locationURI>
+		</link>
+		<link>
+			<name>src/ctrl/scbi_glue.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi_glue.h</locationURI>
+		</link>
+		<link>
+			<name>src/ctrl/scbi_param.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi_param.c</locationURI>
+		</link>
+		<link>
 			<name>src/linuxtools/ctrl</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>

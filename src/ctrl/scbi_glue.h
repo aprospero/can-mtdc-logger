@@ -1,7 +1,16 @@
-#ifndef _CTRL_SCBI__H
-#define _CTRL_SCBI__H
+#ifndef _CTRL_SCBI_GLUE__H
+#define _CTRL_SCBI_GLUE__H
+
+#include <stdint.h>
 
 #include "scbi_api.h"
+
+#define SCBI_REPOST_TIMEOUT_SEC 300 // doublette values are blocked from propagation for 5min.
+
+#define BYTE2TEMP(x) ((uint8_t) (((uint16_t) (x) * 100) / 255))
+#define TEMP2BYTE(x) ((unit8_t) (((uint16_t) (x) * 255) / 100))
+
+struct scbi_handle;
 
 enum scbi_protocol
 {
@@ -87,6 +96,8 @@ struct scbi_dlg_sensor_msg
   uint8_t  subtype;
 } __attribute__((packed));
 
+
+
 // message definition for relay data
 
 struct scbi_dlg_relay_msg
@@ -96,6 +107,7 @@ struct scbi_dlg_relay_msg
   uint8_t value;
   uint8_t exfunc[2];
 } __attribute__((packed));
+
 
 // message definition for overview data
 #if 0
@@ -117,7 +129,6 @@ struct scbi_dlg_overview_msg  /* this is the definition by experience */
    uint32_t heat_yield;
 } __attribute__((packed));
 #endif
-
 
 
 union scbi_data_logger_msg
@@ -216,6 +227,10 @@ union scbi_msg_content
 };
 
 
-int scbi_parse(struct scbi_param_handle * hnd, struct scbi_frame_buffer * buf);
+struct scbi_handle * scbi_init (struct scbi_param_handle * param_hnd, const char *port, void * broker);
 
-#endif   // _CTRL_SCBI__H
+void scbi_update(struct scbi_handle * hnd);
+int  scbi_close(struct scbi_handle * hnd);
+
+
+#endif   // _CTRL_SCBI_GLUE__H

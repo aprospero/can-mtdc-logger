@@ -13,191 +13,11 @@
 #include <errno.h>
 
 #include "ctrl/scbi.h"
-#include "linuxtools/ctrl/com/mqtt.h"
 #include "linuxtools/ctrl/logger.h"
 #include "linuxtools/timehelp.h"
 
-struct scbi_entity
-{
-    const char * name;
-    int32_t      last_val;
-    time_t       last_tx;
-};
-struct scbi_entities
-{
-    struct scbi_entity sensor [DST_COUNT][SCBI_MAX_SENSORS];
-    struct scbi_entity relay [DRM_COUNT][DRE_COUNT][SCBI_MAX_RELAYS];
-    struct scbi_entity oview [DOT_COUNT][DOM_COUNT];
-};
-
-struct scbi_handle
-{
-  int                  soc;
-  int                  read_can_port;
-  struct mqtt_handle * broker;
-  struct scbi_entities entity;
-  time_t               now;
-};
-
-struct scbi_frame_buffer
-{
-  struct can_frame frame;
-  struct timeval   tstamp;
-};
-
-int scbi_register_dlg_sensor(struct scbi_handle * hnd, size_t id, enum scbi_dlg_sensor_type type, const char * entity)
-{
-  if (id >= SCBI_MAX_SENSORS)
-    return -1;
-  if (type >= DST_COUNT)
-    type = DST_UNKNOWN;
-  hnd->entity.sensor[type][id].name = entity;
-  hnd->entity.sensor[type][id].last_val = INT32_MAX;
-  return 0;
-}
-
-int scbi_register_dlg_relay(struct scbi_handle * hnd, size_t id, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, const char * entity)
-{
-  if (efct == DRE_DISABLED || efct == DRE_UNSELECTED)
-    efct -= DRE_DISABLED - (DRE_COUNT - 2);
-  if (mode >= DRM_COUNT || efct >= DRE_COUNT || id >= SCBI_MAX_RELAYS)
-    return -1;
-  hnd->entity.relay[mode][efct][id].name     = entity;
-  hnd->entity.relay[mode][efct][id].last_val = INT32_MAX;
-  return 0;
-}
-
-int scbi_register_dlg_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, const char * entity)
-{
-  if (type >= DOT_COUNT || mode >= DOM_COUNT)
-    return -1;
-  hnd->entity.oview[type][mode].name = entity;
-  hnd->entity.oview[type][mode].last_val = INT32_MAX;
-  return 0;
-}
-
-static inline void publish_entity(struct scbi_handle * hnd, const char * type, struct scbi_entity * entity, int32_t value)
-{
-  if (entity->name && (entity->last_val != value || hnd->now - entity->last_tx > SCBI_REPOST_TIMEOUT_SEC))
-  {
-    mqtt_publish(hnd->broker, type, entity->name, value);
-    entity->last_val = value;
-    entity->last_tx = hnd->now;
-  }
-}
-
-static inline void publish_sensor(struct scbi_handle * hnd, enum scbi_dlg_sensor_type type, size_t id, int32_t value)
-{
-  if (type >= DST_COUNT)
-    type = DST_UNKNOWN;
-  if (id < SCBI_MAX_SENSORS)
-    publish_entity(hnd, "sensor", &hnd->entity.sensor[type][id], value);
-}
-
-static inline void publish_relay(struct scbi_handle * hnd, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, size_t id, int32_t value)
-{
-  struct scbi_entity * entity = NULL;
-  if (efct == DRE_DISABLED || efct == DRE_UNSELECTED)
-    efct -= DRE_DISABLED - (DRE_COUNT - 2);  /* last two extfuncts (0xFE & 0XFF) are wrapped to the end of the map */
-  if (mode < DRM_COUNT && efct < DRE_COUNT && id < SCBI_MAX_RELAYS)
-    publish_entity(hnd, "relay", &hnd->entity.relay[mode][efct][id], value);
-}
-
-static inline void publish_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, int value)
-{
-  if (type < DOT_COUNT && mode < DOM_COUNT)
-    publish_entity(hnd, "overview", &hnd->entity.oview[type][mode], value);
-}
-
-
-
-struct scbi_handle * scbi_init (const char *port, void * broker)
-{
-  struct ifreq ifr;
-  struct sockaddr_can addr;
-  struct scbi_handle * hnd = calloc (1, sizeof(struct scbi_handle));
-
-  LG_INFO("Initializing Sorel CAN Msg parser.");
-
-  if (hnd == NULL)
-  {
-    LG_CRITICAL("Could not alocate ressources for Sorel CAN Msg parser.");
-    return NULL;
-  }
-
-  hnd->soc = socket (PF_CAN, SOCK_RAW, CAN_RAW);
-  if (hnd->soc < 0)
-  {
-    LG_CRITICAL("Could not open CAN interface. Error: %s", strerror(errno));
-    free(hnd);
-    return NULL;
-  }
-
-  addr.can_family = AF_CAN;
-  strcpy (ifr.ifr_name, port);
-  if (ioctl (hnd->soc, SIOCGIFINDEX, &ifr) < 0)
-  {
-    LG_CRITICAL("Could not address CAN interface. Error: %s", strerror(errno));
-    free(hnd);
-    return NULL;
-  }
-  addr.can_ifindex = ifr.ifr_ifindex;
-  fcntl (hnd->soc, F_SETFL, O_NONBLOCK);
-  if (bind (hnd->soc, (struct sockaddr*) &addr, sizeof(addr)) < 0)
-  {
-    LG_CRITICAL("Could not bind to CAN interface. Error: %s", strerror(errno));
-    free(hnd);
-    return NULL;
-  }
-  hnd->broker = broker;
-  return hnd;
-}
-
-
-#if 0
-static int scbi_send(struct scbi_handle * hnd, union scbi_address_id id, union scbi_msg_content * data, uint8_t len)
-{
-	int retval;
-	struct scbi_frame_buffer frame_wr;
-	memset(&frame_wr, 0x00, sizeof(frame_wr));
-	frame_wr.frame.can_id = id.address_id;
-	frame_wr.frame.len = len;
-	if (len > sizeof(frame_wr.frame.data))
-	  len = sizeof(frame_wr.frame.data);
-	memcpy(frame_wr.frame.data, data->raw, len);
-	gettimeofday(&frame_wr.tstamp, NULL);
-
-	scbi_print_CAN_frame (LL_INFO, "SEND", "Sending", &frame_wr);
-
-	retval = write(hnd->soc, &frame_wr.frame, sizeof(struct can_frame));
-	if (retval != sizeof(struct can_frame))
-		return (-1);
-  return len;
-}
-
-void scbi_send_request(struct scbi_handle * hnd)
-{
-  union scbi_address_id  id;
-  union scbi_msg_content data;
-
-  id.address_id = 0UL;
-  memset(&data, 0, sizeof(data));
-
-  id.scbi_id.client = 0xA0;
-  id.scbi_id.msg = CAN_MSG_REQUEST;
-  id.scbi_id.prot = CAN_PROTO_FORMAT_0;
-  id.scbi_id.prog = PRG_AVAILABLERESOURCES;
-  id.scbi_id.func = 0;
-  id.scbi_id.flg_eff = TRUE;
-
-  data.avail_sensor.remote_id = 0x9F;
-
-//  data.dlg.sensor.id = 0;
-
-  scbi_send(hnd, id, &data, sizeof(data.avail_sensor));
-}
-#endif
-
+#define BYTE2TEMP(x) ((uint8_t) (((uint16_t) (x) * 100) / 255))
+#define TEMP2BYTE(x) ((unit8_t) (((uint16_t) (x) * 255) / 100))
 
 static const char* format_raw_CAN_data (struct can_frame *frame_rd)
 {
@@ -225,7 +45,7 @@ static void scbi_print_CAN_frame (enum log_level ll, const char * msg_type, cons
   }
 }
 
-static void scbi_compute_datalogger (struct scbi_handle *hnd, struct scbi_frame_buffer * frame_rd)
+static void scbi_compute_datalogger (struct scbi_param_handle * hnd, struct scbi_frame_buffer * frame_rd)
 {
   union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->frame.can_id;
   union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->frame.data[0];
@@ -242,18 +62,18 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct scbi_frame_
       {
         case DLF_SENSOR:
           LG_EVENT("SENSOR%u (%u) -> %d.", msg->dlg.sensor.id, msg->dlg.sensor.type, msg->dlg.sensor.value);
-          publish_sensor(hnd, msg->dlg.sensor.type, msg->dlg.sensor.id,  msg->dlg.sensor.value);
+          scbi_param_update_sensor(hnd, msg->dlg.sensor.type, msg->dlg.sensor.id,  msg->dlg.sensor.value);
           break;
         case DLF_RELAY:
           LG_EVENT("RELAY%u (%u/%u) -> %u (%s).", msg->dlg.relay.id, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.value, format_raw_CAN_data (&frame_rd->frame));
-          publish_relay(hnd, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.id, msg->dlg.relay.value);
+          scbi_param_update_relay(hnd, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.id, msg->dlg.relay.value);
           break;
         case DLG_OVERVIEW:
           char temp[255];
 
           snprintf (temp, sizeof(temp), "overview %u-%u -> %uh/%ukWh.", msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.oview.hours, msg->dlg.oview.heat_yield);
           LG_DEBUG("%-26.26s - (%s)", temp, format_raw_CAN_data (&frame_rd->frame));
-          publish_overview(hnd, msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.relay.value);
+          scbi_param_update_overview(hnd, msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.relay.value);
           break;
         case DLF_UNDEFINED:
         case DLG_HYDRAULIC_PROGRAM:
@@ -270,7 +90,7 @@ static void scbi_compute_datalogger (struct scbi_handle *hnd, struct scbi_frame_
 
 }
 
-static void scbi_compute_controller (struct scbi_handle *hnd, struct scbi_frame_buffer * frame_rd)
+static void scbi_compute_controller (struct scbi_param_handle *hnd, struct scbi_frame_buffer * frame_rd)
 {
   union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->frame.can_id;
   union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->frame.data[0];
@@ -309,7 +129,7 @@ static void scbi_compute_controller (struct scbi_handle *hnd, struct scbi_frame_
   }
 }
 
-static void scbi_compute_hcc (struct scbi_handle *hnd, struct scbi_frame_buffer * frame_rd)
+static void scbi_compute_hcc (struct scbi_param_handle *hnd, struct scbi_frame_buffer * frame_rd)
 {
   union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->frame.can_id;
   union scbi_msg_content *msg = (union scbi_msg_content*) &frame_rd->frame.data[0];
@@ -363,7 +183,7 @@ static void scbi_compute_hcc (struct scbi_handle *hnd, struct scbi_frame_buffer 
   }
 }
 
-static void scbi_compute_format0 (struct scbi_handle *hnd, struct scbi_frame_buffer *frame_rd)
+void scbi_compute_format0 (struct scbi_param_handle * hnd, struct scbi_frame_buffer * frame_rd)
 {
   union scbi_address_id *addi = (union scbi_address_id*) &frame_rd->frame.can_id;
   switch (addi->scbi_id.prog)
@@ -390,80 +210,14 @@ static void scbi_compute_format0 (struct scbi_handle *hnd, struct scbi_frame_buf
 
 }
 
-/* this is just an example, run in a thread */
-void scbi_update (struct scbi_handle *hnd)
+int scbi_parse(struct scbi_param_handle * hnd, struct scbi_frame_buffer * buf)
 {
-  struct scbi_frame_buffer frame_rd;
-  union scbi_address_id *  addi = (union scbi_address_id *) &frame_rd.frame.can_id;
-  int                      rx;
+  union scbi_address_id *  addi = (union scbi_address_id *) &buf->frame.can_id;
 
-  hnd->read_can_port = 1;
-
-  while (hnd->read_can_port)
-  {
-    struct timeval timeout = { 1, 0 };
-    struct timeval tv;
-    fd_set readSet;
-    FD_ZERO(&readSet);
-    FD_SET(hnd->soc, &readSet);
-    if (select ((hnd->soc + 1), &readSet, NULL, NULL, &timeout) >= 0)
-    {
-      if (!hnd->read_can_port)
-      {
-        break;
-      }
-      if (FD_ISSET(hnd->soc, &readSet))
-      {
-        rx = read (hnd->soc, &frame_rd.frame, sizeof(struct can_frame));
-        if (rx < 0)
-        {
-          LG_ERROR("Reading CAN Bus: Posix Error (%i) '%s'.\n", errno, strerror(errno));
-          continue;
-        }
-
-        if (rx < sizeof(struct can_frame))
-        {
-          scbi_print_CAN_frame (LL_ERROR, "FRAME", "too short", &frame_rd);
-          continue;
-        }
-
-        ioctl(hnd->soc, SIOCGSTAMP, &frame_rd.tstamp);
-
-        if (addi->scbi_id.msg == CAN_MSG_ERROR || addi->scbi_id.flg_err)
-          scbi_print_CAN_frame (LL_ERROR, "FRAME", "Frame Error", &frame_rd);
-        else
-        {
-          scbi_print_CAN_frame (LL_DEBUG_MORE, "FRAME", "Msg", &frame_rd);
-          switch (addi->scbi_id.prot)
-          {
-            case CAN_PROTO_FORMAT_0:
-              scbi_compute_format0 (hnd, &frame_rd);
-              break; /* CAN Msgs size <= 8 */
-            case CAN_PROTO_FORMAT_BULK:
-              LG_INFO("Bulk format not supported yet.");
-              break; /* CAN Msgs size >  8 */
-            case CAN_PROTO_FORMAT_UPDATE:
-              LG_INFO("Updates via CAN not supported yet.");
-              break; /* CAN Msg transmitting firmware update */
-            default:
-              LG_INFO("Unknown protocol: 0x%02X.", addi->scbi_id.prot);
-              break;
-          }
-        }
-        fflush (stdout);
-        fflush (stderr);
-      }
-    }
-
-    hnd->now = time(NULL);
-
-    if (hnd->broker != NULL)
-      mqtt_loop(hnd->broker, -1);
+  if (addi->scbi_id.prot == CAN_PROTO_FORMAT_0)
+  { /* CAN Msgs size <= 8 */
+    scbi_compute_format0 (hnd, buf);
+    return 0;
   }
-}
-
-int scbi_close (struct scbi_handle *hnd)
-{
-  close (hnd->soc);
-  return 0;
+  return -1;
 }
