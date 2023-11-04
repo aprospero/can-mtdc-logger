@@ -216,6 +216,4 @@ union scbi_msg_content
 };
 
 
-int scbi_parse(struct scbi_param_handle * hnd, struct scbi_frame_buffer * buf);
-
 #endif   // _CTRL_SCBI__H

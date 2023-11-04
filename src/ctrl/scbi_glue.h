@@ -226,11 +226,12 @@ union scbi_msg_content
   struct scbi_avail_sensor_req_msg avail_sensor;
 };
 
+void scbi_glue_log(enum scbi_log_level ll, const char * format, ...);
 
-struct scbi_handle * scbi_init (struct scbi_param_handle * param_hnd, const char *port, void * broker);
+struct scbi_glue_handle * scbi_glue_init (struct scbi_handle * scbi_hnd, const char *port, void * broker);
 
-void scbi_update(struct scbi_handle * hnd);
-int  scbi_close(struct scbi_handle * hnd);
+void scbi_glue_update(struct scbi_glue_handle * hnd);
+int  scbi_glue_close(struct scbi_glue_handle * hnd);
 
 
 #endif   // _CTRL_SCBI_GLUE__H

@@ -1,51 +1,32 @@
 #ifndef _CTRL_SCBI_API_H
 #define _CTRL_SCBI_API_H
 
+#ifndef SCBI_NO_LINUX_SUPPORT
+
 #include <stdint.h>
 #include <stddef.h>
-
-#define SCBI_LINUX_SUPPORT
-
-#ifdef SCBI_LINUX_SUPPORT
 #include <linux/can.h>
-#include <sys/time.h>
 
 #else
 
-struct can_frame {
-  uint32_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
-  union {
-    /* CAN frame payload length in byte (0 .. CAN_MAX_DLEN)
-     * was previously named can_dlc so we need to carry that
-     * name for legacy support
-     */
-    uint8_t len;
-    uint8_t can_dlc; /* deprecated */
-  } __attribute__((packed)); /* disable padding added in some ABIs */
-  uint8_t __pad; /* padding */
-  uint8_t __res0; /* reserved / padding */
-  uint8_t len8_dlc; /* optional DLC for 8 byte payload length (9 .. 15) */
-  uint8_t data[CAN_MAX_DLEN] __attribute__((aligned(8)));
-};
+#include "scbi_compat.h"
 
-struct timeval
-{
-  int32_t tv_sec;    /* Seconds.  */
-  int32_t tv_usec;  /* Microseconds.  */
-};
+#endif  // SCBI_NO_LINUX_SUPPORT
 
-#endif
 
-struct scbi_frame_buffer
-{
-  struct can_frame frame;
-  struct timeval   tstamp;
-};
-
-#define SCBI_REPOST_TIMEOUT_SEC 300 // doublette values are blocked from propagation for 5min.
 
 #define SCBI_MAX_SENSORS 4
 #define SCBI_MAX_RELAYS  2
+
+// timestamp in ms, overflowing at SCBI_TIME_MAX
+typedef uint32_t scbi_time;
+#define SCBI_TIME_MAX UINT32_MAX
+
+struct scbi_frame
+{
+  struct can_frame msg;
+  scbi_time        recvd;
+};
 
 enum scbi_param_type
 {
@@ -173,27 +154,33 @@ enum scbi_dlg_overview_mode
   DOM_COUNT
 };
 
+enum scbi_log_level
+{
+  SCBI_LL_CRITICAL,
+  SCBI_LL_ERROR,
+  SCBI_LL_WARNING,
+  SCBI_LL_INFO,
+  SCBI_LL_DEBUG,
+  SCBI_LL_CNT
+};
 
 
+struct scbi_handle;
 
+typedef  void * (*    alloc_fn) (size_t __size);
+typedef void    (* log_push_fn) (enum scbi_log_level ll, const char * format, ...);
 
-struct scbi_param_handle;
+struct scbi_handle * scbi_init(alloc_fn alloc, log_push_fn log_push, uint32_t repost_timeout_s);
 
-typedef  void *(* alloc_fn) (size_t __size);
+int scbi_register_sensor(struct scbi_handle * hnd, size_t id, enum scbi_dlg_sensor_type type, const char * entity);
+int scbi_register_relay(struct scbi_handle * hnd, size_t id, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, const char * entity);
+int scbi_register_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, const char * entity);
 
-struct scbi_param_handle * scbi_param_init(alloc_fn alloc);
+int scbi_parse(struct scbi_handle * hnd, struct scbi_frame * frame);
 
-int scbi_param_register_sensor(struct scbi_param_handle * hnd, size_t id, enum scbi_dlg_sensor_type type, const char * entity);
-int scbi_param_register_relay(struct scbi_param_handle * hnd, size_t id, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, const char * entity);
-int scbi_param_register_overview(struct scbi_param_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, const char * entity);
+struct scbi_param_public * scbi_peek_param(struct scbi_handle * hnd);
+struct scbi_param_public * scbi_pop_param(struct scbi_handle * hnd);
 
-void scbi_param_update_sensor(struct scbi_param_handle * hnd, enum scbi_dlg_sensor_type type, size_t id, int32_t value);
-void scbi_param_update_relay(struct scbi_param_handle * hnd, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, size_t id, int32_t value);
-void scbi_param_update_overview(struct scbi_param_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, int32_t value);
-
-struct scbi_param_public * scbi_param_peek(struct scbi_param_handle * hnd);
-struct scbi_param_public * scbi_param_pop(struct scbi_param_handle * hnd);
-
-int scbi_parse(struct scbi_param_handle * hnd, struct scbi_frame_buffer * frame);
+void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * txt, struct scbi_frame * frame);
 
 #endif   // _CTRL_SCBI_API_H

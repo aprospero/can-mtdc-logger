@@ -85,11 +85,6 @@
 			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi_glue.h</locationURI>
 		</link>
 		<link>
-			<name>src/ctrl/scbi_param.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi_param.c</locationURI>
-		</link>
-		<link>
 			<name>src/linuxtools/src</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>

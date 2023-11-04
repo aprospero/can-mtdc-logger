@@ -50,9 +50,9 @@
 			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi_api.h</locationURI>
 		</link>
 		<link>
-			<name>src/ctrl/scbi_param.c</name>
+			<name>src/ctrl/scbi_compat.h</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi_param.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi_compat.h</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
