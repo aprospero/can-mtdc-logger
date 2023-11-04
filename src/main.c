@@ -43,7 +43,7 @@ int main(int argc, char * argv[])
   if (mqtt)
   {
     scbi = scbi_init(malloc, scbi_glue_log, 300);
-    scbi_glue = scbi_glue_init(scbi, "can0", mqtt);
+    scbi_glue = scbi_glue_init(scbi, config.can_device, mqtt);
     if (scbi)
     {
       scbi_register_sensor(scbi, 0, DST_UNDEFINED, "collector");
