@@ -60,16 +60,6 @@
 			<locationURI>PARENT-1-PROJECT_LOC/src/version.h</locationURI>
 		</link>
 		<link>
-			<name>src/ctrl/scbi.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi.c</locationURI>
-		</link>
-		<link>
-			<name>src/ctrl/scbi.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi.h</locationURI>
-		</link>
-		<link>
 			<name>src/ctrl/scbi_api.h</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/src/ctrl/scbi_api.h</locationURI>
