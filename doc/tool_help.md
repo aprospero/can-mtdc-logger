@@ -34,6 +34,8 @@
 
 ###### Build environment
 
-to date an eclipse cdt project is part of the repo. It includes source code resources via virtual folders and files which makes it independent from any other make/cmake/whatever buildsystem support possibly added in the future.
+the application depends on the [sorella shared library](./lib_help.md)  and mosquitto, a tiny MQTT broker for Linux.
 
-Nevertheless most likely other build systems will lack of the same cross-compile toolchain referenced in the provided eclipse project, so it would need a complete reconfiguration of the build settings to be of use........ 
+to date several eclipse cdt projects are part of the repo. They includes source code resources via virtual folders and files which makes them independent from any other make/cmake/whatever buildsystem support possibly added in the future.
+
+Nevertheless most likely other build systems will lack of the same cross-compile toolchain referenced in the provided eclipse projects, so it would need a complete reconfiguration of the build settings to be of use........ 

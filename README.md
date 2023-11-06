@@ -6,4 +6,4 @@ Other devices from SOREL may work as well.
 
 CAN addresses are taken from SOREL CAN BUS Interface (SCBI) documentation. Many Thanks to the superb suppport at sorel.de, namely international technical supporter Rhona Mackay who always patiently answered any question/request!
 
-For further info about this project have a look into the wiki
+For further info about this project have a look into the [docs](doc/wiki_home.md)
