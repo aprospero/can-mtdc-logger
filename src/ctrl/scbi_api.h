@@ -2,19 +2,14 @@
 #define _CTRL_SCBI_API_H
 
 #ifndef SCBI_NO_LINUX_SUPPORT
-
-#include <stdint.h>
-#include <stddef.h>
-#include <linux/can.h>
-
+  #include <stdint.h>
+  #include <stddef.h>
+  #include <linux/can.h>
 #else
-
-#include "scbi_compat.h"
-
+  #include "scbi_compat.h"
 #endif  // SCBI_NO_LINUX_SUPPORT
 
-
-
+// device featureset
 #define SCBI_MAX_SENSORS 4
 #define SCBI_MAX_RELAYS  2
 
@@ -22,12 +17,14 @@
 typedef uint32_t scbi_time;
 #define SCBI_TIME_MAX UINT32_MAX
 
+// transfer structure containing one SCBI message with its associated timestamp
 struct scbi_frame
 {
   struct can_frame msg;
   scbi_time        recvd;
 };
 
+// datalogger monitor parameter types
 enum scbi_param_type
 {
   SCBI_PARAM_TYPE_SENSOR,
@@ -37,7 +34,7 @@ enum scbi_param_type
   SCBI_PARAM_TYPE_NONE
 };
 
-struct scbi_param_public
+struct scbi_param
 {
   enum scbi_param_type type;
   const char *         name;
@@ -178,8 +175,8 @@ int scbi_register_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type
 
 int scbi_parse(struct scbi_handle * hnd, struct scbi_frame * frame);
 
-struct scbi_param_public * scbi_peek_param(struct scbi_handle * hnd);
-struct scbi_param_public * scbi_pop_param(struct scbi_handle * hnd);
+struct scbi_param * scbi_peek_param(struct scbi_handle * hnd);
+struct scbi_param * scbi_pop_param(struct scbi_handle * hnd);
 
 void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * txt, struct scbi_frame * frame);
 

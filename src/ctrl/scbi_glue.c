@@ -101,11 +101,11 @@ struct scbi_glue_handle * scbi_glue_init (struct scbi_handle * scbi_hnd, const c
 
 void scbi_glue_update (struct scbi_glue_handle * hnd)
 {
-  struct scbi_frame          frame;
-  struct timeval             tstamp;
-  union scbi_address_id *    addi = (union scbi_address_id *) &frame.msg.can_id;
-  struct scbi_param_public * param;
-  int                        rx;
+  struct scbi_frame       frame;
+  struct timeval          tstamp;
+  union scbi_address_id * addi = (union scbi_address_id *) &frame.msg.can_id;
+  struct scbi_param *     param;
+  int                     rx;
 
   hnd->read_can_port = 1;
 

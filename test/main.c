@@ -61,7 +61,7 @@ static void parse_line(struct scbi_frame * frame, char * line, scbi_time * cum)
 static void parse_file(struct scbi_handle * hnd, const char * fname)
 {
   struct scbi_frame frame;
-  struct scbi_param_public * param;
+  struct scbi_param * param;
   scbi_time cum = 0;
   static FILE * fp;
   char * line = NULL;

@@ -1,26 +1,26 @@
 #include "scbi.h"
 
-struct scbi_param
+struct scbi_param_internal
 {
-    struct scbi_param_public public;
-    scbi_time                last_tx;
-    uint32_t                 in_queue;
+    struct scbi_param public;
+    scbi_time         last_tx;
+    uint32_t          in_queue;
 };
 
 struct scbi_params
 {
-    struct scbi_param sensor [DST_COUNT][SCBI_MAX_SENSORS];
-    struct scbi_param relay [DRM_COUNT][DRE_COUNT][SCBI_MAX_RELAYS];
-    struct scbi_param oview [DOT_COUNT][DOM_COUNT];
+    struct scbi_param_internal sensor [DST_COUNT][SCBI_MAX_SENSORS];
+    struct scbi_param_internal relay [DRM_COUNT][DRE_COUNT][SCBI_MAX_RELAYS];
+    struct scbi_param_internal oview [DOT_COUNT][DOM_COUNT];
 };
 
 struct scbi_param_queue_entry
 {
-  struct scbi_param * param;
+  struct scbi_param_internal * param;
   struct scbi_param_queue_entry * next;
 };
 
-#define SCBI_PARAM_MAX_ENTRIES (sizeof(struct scbi_params) / sizeof(struct scbi_param))
+#define SCBI_PARAM_MAX_ENTRIES (sizeof(struct scbi_params) / sizeof(struct scbi_param_internal))
 
 struct scbi_param_queue {
   struct scbi_param_queue_entry * first;
@@ -98,7 +98,7 @@ static inline scbi_time scbi_time_diff(scbi_time sooner, scbi_time later)
 
 /* helper fcts */
 
-static int push_param(struct scbi_handle * hnd, struct scbi_param * param)
+static int push_param(struct scbi_handle * hnd, struct scbi_param_internal * param)
 {
   if (param->in_queue)
     return 0;
@@ -118,7 +118,7 @@ static int push_param(struct scbi_handle * hnd, struct scbi_param * param)
   return 0;
 }
 
-static inline void update_param(struct scbi_handle * hnd, scbi_time recvd, struct scbi_param * param, int32_t value)
+static inline void update_param(struct scbi_handle * hnd, scbi_time recvd, struct scbi_param_internal * param, int32_t value)
 {
   if (param->public.name && (param->public.value != value || scbi_time_diff(param->last_tx, recvd) > hnd->repost_timeout_s * 1000))
   {
@@ -207,14 +207,14 @@ int scbi_register_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type
 }
 
 
-struct scbi_param_public * scbi_peek_param(struct scbi_handle * hnd)
+struct scbi_param * scbi_peek_param(struct scbi_handle * hnd)
 {
   if (hnd->queue.first == NULL)
     return NULL;
   return &hnd->queue.first->param->public;
 }
 
-struct scbi_param_public * scbi_pop_param(struct scbi_handle * hnd)
+struct scbi_param * scbi_pop_param(struct scbi_handle * hnd)
 {
   struct scbi_param_queue_entry * ret = hnd->queue.first;
   if (ret == NULL)
