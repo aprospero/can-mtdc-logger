@@ -228,12 +228,12 @@ struct scbi_param * scbi_pop_param(struct scbi_handle * hnd)
 
 void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * txt, struct scbi_frame * frame)
 {
-  union scbi_address_id *addi = (union scbi_address_id*) &frame->msg.can_id;
+  union scbi_address_id *adid = (union scbi_address_id*) &frame->msg.can_id;
   if (hnd->fn.log_push) {
     hnd->fn.log_push(ll, "(%s) %s: % 6ums CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data:%s.",
-                  msg_type, txt, frame->recvd, addi->address_id,
-                  addi->scbi_id.prog, addi->scbi_id.client, addi->scbi_id.func, addi->scbi_id.prot, addi->scbi_id.msg,
-                  addi->scbi_id.flg_err ? " ERR" : " ---", addi->scbi_id.flg_eff ? "-EFF" : "----", addi->scbi_id.flg_rtr ? "-RTR" : "----",
+                  msg_type, txt, frame->recvd, adid->address_id,
+                  adid->scbi_id.prog, adid->scbi_id.client, adid->scbi_id.func, adid->scbi_id.prot, adid->scbi_id.msg,
+                  adid->scbi_id.flg_err ? " ERR" : " ---", adid->scbi_id.flg_eff ? "-EFF" : "----", adid->scbi_id.flg_rtr ? "-RTR" : "----",
                   frame->msg.len, format_scbi_frame_data (frame));
   }
 }
@@ -253,9 +253,9 @@ void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const c
 
 static void scbi_compute_datalogger (struct scbi_handle * hnd, struct scbi_frame * frame)
 {
-  union scbi_address_id *addi = (union scbi_address_id*) &frame->msg.can_id;
+  union scbi_address_id *adid = (union scbi_address_id*) &frame->msg.can_id;
   union scbi_msg_content *msg = (union scbi_msg_content*) &frame->msg.data[0];
-  switch (addi->scbi_id.msg)
+  switch (adid->scbi_id.msg)
   {
     case CAN_MSG_REQUEST:
       LG_INFO("Datalogger requests not supported yet.");
@@ -264,7 +264,7 @@ static void scbi_compute_datalogger (struct scbi_handle * hnd, struct scbi_frame
       LG_INFO("Datalogger reserve msgs not supported yet.");
       break;
     case CAN_MSG_RESPONSE:
-      switch (addi->scbi_id.func)
+      switch (adid->scbi_id.func)
       {
         case DLF_SENSOR:
           LG_DEBUG("SENSOR%u (%u) -> %d (%s).", msg->dlg.sensor.id, msg->dlg.sensor.type, msg->dlg.sensor.value, format_scbi_frame_data(frame));
@@ -284,7 +284,7 @@ static void scbi_compute_datalogger (struct scbi_handle * hnd, struct scbi_frame
         case DLG_PARAM_MONITORING:
         case DLG_STATISTIC:
         case DLG_HYDRAULIC_CONFIG:
-          LG_INFO("Datalogger function 0x%02X not supported yet.", addi->scbi_id.func);
+          LG_INFO("Datalogger function 0x%02X not supported yet.", adid->scbi_id.func);
           break;
       }
       break;
@@ -294,9 +294,9 @@ static void scbi_compute_datalogger (struct scbi_handle * hnd, struct scbi_frame
 
 static void scbi_compute_controller (struct scbi_handle *hnd, struct scbi_frame * frame)
 {
-  union scbi_address_id *addi = (union scbi_address_id*) &frame->msg.can_id;
+  union scbi_address_id *adid = (union scbi_address_id*) &frame->msg.can_id;
   union scbi_msg_content *msg = (union scbi_msg_content*) &frame->msg.data[0];
-  switch (addi->scbi_id.msg)
+  switch (adid->scbi_id.msg)
   {
     case CAN_MSG_REQUEST:
       LG_INFO ("Controller requests not supported yet.");
@@ -305,7 +305,7 @@ static void scbi_compute_controller (struct scbi_handle *hnd, struct scbi_frame 
       LG_INFO ("Controller reserve msgs not supported yet.");
       break;
     case CAN_MSG_RESPONSE:
-      switch (addi->scbi_id.func)
+      switch (adid->scbi_id.func)
       {
         case CTR_HAS_ANYBODY_HERE:
           LG_DEBUG("0x%02X asks: 'IS ANYBODY ALIVE?'", msg->identity.can_id);
@@ -323,7 +323,7 @@ static void scbi_compute_controller (struct scbi_handle *hnd, struct scbi_frame 
         case CTR_GET_SYSTEM_DATE_TIME:
         case CTR_SET_SYSTEM_DATE_TIME:
         case CTR_DATALOGGER_TEST:
-          LG_DEBUG("Controller function %u - CAN:%u, DEV:%u, OEM:%u, Variant:%u.", addi->scbi_id.func, msg->identity.can_id,
+          LG_DEBUG("Controller function %u - CAN:%u, DEV:%u, OEM:%u, Variant:%u.", adid->scbi_id.func, msg->identity.can_id,
                    msg->identity.cfg_dev_id, msg->identity.cfg_oem_id, msg->identity.dev_variant);
           break;
       }
@@ -333,20 +333,20 @@ static void scbi_compute_controller (struct scbi_handle *hnd, struct scbi_frame 
 
 static void scbi_compute_hcc (struct scbi_handle *hnd, struct scbi_frame * frame)
 {
-  union scbi_address_id *addi = (union scbi_address_id*) &frame->msg.can_id;
+  union scbi_address_id *adid = (union scbi_address_id*) &frame->msg.can_id;
   union scbi_msg_content *msg = (union scbi_msg_content*) &frame->msg.data[0];
-  char *type = addi->scbi_id.msg == CAN_MSG_REQUEST ? "REQUEST" : "RESPONSE";
+  char *type = adid->scbi_id.msg == CAN_MSG_REQUEST ? "REQUEST" : "RESPONSE";
 
-  switch (addi->scbi_id.msg)
+  switch (adid->scbi_id.msg)
   {
     case CAN_MSG_REQUEST:
       scbi_print_frame(hnd, SCBI_LL_INFO, type, "HCC request msgs not supported yet.", frame);
       break;
     case CAN_MSG_RESPONSE:
-      switch (addi->scbi_id.func)
+      switch (adid->scbi_id.func)
       {
         case HCC_HEATREQUEST:
-          if (addi->scbi_id.flg_err)
+          if (adid->scbi_id.flg_err)
             scbi_print_frame(hnd, SCBI_LL_ERROR, type, "heat request error", frame);
           else if (frame->msg.len != sizeof(msg->hcc.heatreq))
             scbi_print_frame(hnd, SCBI_LL_INFO, type, "heat request with wrong data len.", frame);
@@ -387,8 +387,8 @@ static void scbi_compute_hcc (struct scbi_handle *hnd, struct scbi_frame * frame
 
 static void scbi_compute_format0 (struct scbi_handle * hnd, struct scbi_frame * frame)
 {
-  union scbi_address_id *addi = (union scbi_address_id*) &frame->msg.can_id;
-  switch (addi->scbi_id.prog)
+  union scbi_address_id *adid = (union scbi_address_id*) &frame->msg.can_id;
+  switch (adid->scbi_id.prog)
   {
     case PRG_CONTROLLER:
       scbi_compute_controller (hnd, frame);
@@ -406,7 +406,7 @@ static void scbi_compute_format0 (struct scbi_handle * hnd, struct scbi_frame * 
     case PRG_ROOMSYNC:
     case PRG_MSGLOG:
     case PRG_CBCS:
-      LG_INFO("Program not supported: 0x%02X.", addi->scbi_id.prog);
+      LG_INFO("Program not supported: 0x%02X.", adid->scbi_id.prog);
       break;
   }
 
@@ -417,10 +417,10 @@ static void scbi_compute_format0 (struct scbi_handle * hnd, struct scbi_frame * 
 
 int scbi_parse(struct scbi_handle * hnd, struct scbi_frame * frame)
 {
-  union scbi_address_id *  addi = (union scbi_address_id *) &frame->msg.can_id;
+  union scbi_address_id *  adid = (union scbi_address_id *) &frame->msg.can_id;
   hnd->now = frame->recvd;
 
-  if (addi->scbi_id.prot == CAN_PROTO_FORMAT_0)
+  if (adid->scbi_id.prot == CAN_PROTO_FORMAT_0)
   { /* CAN Msgs size <= 8 */
     scbi_compute_format0 (hnd, frame);
     return 0;
