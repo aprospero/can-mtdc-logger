@@ -41,19 +41,6 @@ struct scbi_param
   int32_t              value;
 };
 
-enum scbi_dlg_function_type   /* PRG_DATALOGGER_MONITOR related functions */
-{
-  DLF_UNDEFINED            = 0x00,
-  DLF_SENSOR               = 0x01,
-  DLF_RELAY                = 0x02,
-  DLG_HYDRAULIC_PROGRAM    = 0x03,
-  DLG_ERROR_MESSAGE        = 0x04,
-  DLG_PARAM_MONITORING     = 0x05,
-  DLG_STATISTIC            = 0x06,
-  DLG_OVERVIEW             = 0x07,
-  DLG_HYDRAULIC_CONFIG     = 0x08
-};
-
 enum scbi_dlg_sensor_type
 {
   DST_UNKNOWN          = 0x00,

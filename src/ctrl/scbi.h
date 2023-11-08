@@ -54,6 +54,21 @@ enum scbi_prog_type          /* CAN_FORMAT_0 protocol definitions */
   PRG_CBCS                    = 0x95
 };
 
+
+enum scbi_dlg_function_type   /* PRG_DATALOGGER_MONITOR related functions */
+{
+  DLF_UNDEFINED            = 0x00,
+  DLF_SENSOR               = 0x01,
+  DLF_RELAY                = 0x02,
+  DLG_HYDRAULIC_PROGRAM    = 0x03,
+  DLG_ERROR_MESSAGE        = 0x04,
+  DLG_PARAM_MONITORING     = 0x05,
+  DLG_STATISTIC            = 0x06,
+  DLG_OVERVIEW             = 0x07,
+  DLG_HYDRAULIC_CONFIG     = 0x08
+};
+
+
 enum scbi_ctr_function_type    /* PRG_CONTROLLER related functions */
 {
   CTR_HAS_ANYBODY_HERE         = 0x00, /* discover CAN subscribers */
