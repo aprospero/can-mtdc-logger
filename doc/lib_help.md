@@ -24,6 +24,8 @@
 
 One instance of scbi for 4 sensors and 2 relays consumes 13KBytes data memory. Code size depends on build system config.
 
+
+
 # Sorella™ API
 
 ## Quickstart
@@ -31,6 +33,8 @@ One instance of scbi for 4 sensors and 2 relays consumes 13KBytes data memory. C
 Sorella™ API provides a mechanism to register parameters for observation. 
 Incoming CAN bus messages from Sorel MTDC/LTDC devices are assumed to be fed to Sorella™ by calling scbi_parse() for each incoming frame. 
 If an incoming scbi frame reports value changes of registered parameters, those are stored in a parameter queue. Duplicate parameter changes are filtered over the time of a configurable timeout. After each call of scbi_parse multiple calls of scbi_pop_param provide change infos of registered params affected by the parsed message, until scbi_pop_param returns an empty result.
+
+
 
 # API Reference
 
@@ -78,11 +82,13 @@ The actual values are representing the featureset of MTDCv5 - these numbers prob
  [**scbi_time**](#scbi_time() max value
 
 SCBI_TIME_MAX = 2³² = 4294967296 ms
- at this value the @ref scbi_time timestamp overflows to zero.
+ at this value [**scbi_time**](#scbi_time() timestamps overflow to zero.
 
 ```c
 #define SCBI_TIME_MAX UINT32_MAX 
 ```
+
+---
 
 ## Types
 
@@ -123,6 +129,8 @@ struct can_frame
   uint8_t data[CAN_MAX_DLEN] __attribute__((aligned(8)));
 };
 ```
+
+---
 
 #### struct scbi_frame
 
@@ -194,28 +202,9 @@ struct scbi_param
 
 ---
 
-#### enum scbi_dlg_function_type
-
-PRG_DATALOGGER_MONITOR related functions 
-
-```c
-enum scbi_dlg_function_type
-{
-  DLF_UNDEFINED            = 0x00,
-  DLF_SENSOR               = 0x01,
-  DLF_RELAY                = 0x02,
-  DLG_HYDRAULIC_PROGRAM    = 0x03,
-  DLG_ERROR_MESSAGE        = 0x04,
-  DLG_PARAM_MONITORING     = 0x05,
-  DLG_STATISTIC            = 0x06,
-  DLG_OVERVIEW             = 0x07,
-  DLG_HYDRAULIC_CONFIG     = 0x08
-};
-```
-
----
-
 #### enum scbi_dlg_sensor_type
+
+States the type of a sensor when it gets registered. It affects
 
 ```c
 enum scbi_dlg_sensor_type
@@ -266,36 +255,35 @@ enum scbi_dlg_relay_ext_func
   DRE_DIFFERENCE          = 0x08,
   DRE_WOOD_BOILER         = 0x09,
 
-  DRE_SAFETY_FCT          = 0x10,
-  DRE_PRESSURE_CTRL       = 0x11,
-  DRE_BOOSTER             = 0x12,
-  DRE_R1PARALLEL_OP       = 0x13,
-  DRE_R2PARALLEL_OP       = 0x14,
-  DRE_ALWAYS_ON           = 0x15,
-  DRE_HEATING_CIRCUIT_RC21= 0x16,
-  DRE_CIRCULATION         = 0x17,
-  DRE_STORAGEHEATING      = 0x18,
-  DRE_STORAGESTACKING     = 0x19,
+  DRE_SAFETY_FCT          = 0x0A,
+  DRE_PRESSURE_CTRL       = 0x0B,
+  DRE_BOOSTER             = 0x0C,
+  DRE_R1PARALLEL_OP       = 0x0D,
+  DRE_R2PARALLEL_OP       = 0x0E,
+  DRE_ALWAYS_ON           = 0x0F,
+  DRE_HEATING_CIRCUIT_RC21= 0x10,
+  DRE_CIRCULATION         = 0x11,
+  DRE_STORAGEHEATING      = 0x12,
+  DRE_STORAGESTACKING     = 0x13,
 
-  DRE_R_V1_PARALLEL       = 0x20,
-  DRE_R_V2_PARALLEL       = 0x21,
-  DRE_R1_PERMANENTLY_ON   = 0x22,
-  DRE_R2_PERMANENTLY_ON   = 0x23,
-  DRE_R3_PERMANENTLY_ON   = 0x24,
+  DRE_R_V1_PARALLEL       = 0x14,
+  DRE_R_V2_PARALLEL       = 0x15,
+  DRE_R1_PERMANENTLY_ON   = 0x16,
+  DRE_R2_PERMANENTLY_ON   = 0x17,
+  DRE_R3_PERMANENTLY_ON   = 0x18,
 
-  DRE_V2_PERMANENTLY_ON   = 0x25,
-  DRE_EXTERNALALHEATING   = 0x26,
-  DRE_NEWLOGMESSAGE       = 0x27,
+  DRE_V2_PERMANENTLY_ON   = 0x19,
+  DRE_EXTERNALALHEATING   = 0x1A,
+  DRE_NEWLOGMESSAGE       = 0x1B,
 
-  DRE_EXTRAPUMP           = 0x28,
-  DRE_PRIMARYMIXER_UP     = 0x29,
-  DRE_PRIMARYMIXER_DOWN   = 0x30,
-  DRE_SOLAR               = 0x31,
-  DRE_CASCADE             = 0x32,
+  DRE_EXTRAPUMP           = 0x1C,
+  DRE_PRIMARYMIXER_UP     = 0x1D,
+  DRE_PRIMARYMIXER_DOWN   = 0x1E,
+  DRE_SOLAR               = 0x1F,
+  DRE_CASCADE             = 0x20,
 
   DRE_DISABLED            = 0xFE,
   DRE_UNSELECTED          = 0xFF,
-
   DRE_COUNT               = DRE_CASCADE + 2 
 };
 ```
