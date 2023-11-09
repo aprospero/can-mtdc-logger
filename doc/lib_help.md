@@ -3,21 +3,17 @@
 #### Public Header:
 
 * ctrl/scbi_api.h
-
 * ctrl/scbi_compat.h (optional)
 
 #### Private implementation and header:
 
 * ctrl/scbi.h
-
 * ctrl/scbi.c
 
 #### Build environment:
 
 * std-c support for variadic functions required
-
 * define SCBI_NO_LINUX_SUPPORT macro in non-linux environments in order to resort to the scbi_compat.h compatibility header.
-
 * disable 'strict aliasing' compiler optimization (eg. -fno-strict-aliasing for GCC)
 
 #### Runtime environment:
@@ -30,29 +26,158 @@ One instance of scbi for 4 sensors and 2 relays consumes 13KiByte data memory. C
 
 ### Abstract
 
-Sorella™ API provides a mechanism to register MTDC/LTDC device parameters for observation. 
-
-### Procedure
-
-Sorel MTDC/LTDC CAN bus messages are fed to Sorella™ by calling scbi_parse() for each incoming frame.
-
-If an incoming [**scbi_frame**](#scbi_frame) reports a registered parameter and either its value has changed or a configurable period of time has elapsed since its last output, it is stored in a queue for output.
-
-After parsing a CAN frame, repeated calls to [**scbi_pop_param**](#scbi_pop_param) provide change information on the registered parameters until the call returns an empty result.
+Sorella™ API provides a mechanism to register MTDC/LTDC device parameters for observation and a parsing engine for interpreting MTDC/LTDC CAN-bus frames to discrete device parameters.
 
 ### Configuration/Initialization
 
 Setting up Sorella™ ready for work is divided in two phases.
 
-* initialization of data structures and optional declaration of a log mechanism
-
-* parameter registration
+- initialization of data structures and optional declaration of a log mechanism
+- parameter registration
 
 The data structures are initialized with a call to [**scbi_init**](#scbi_init). The call gets as parameters a function for memory allocation (required) and a function for handling log output (optional). In addition, the timeout is defined for which a parameter is not repeated without a value change.
 
-Sorella™ is in some aspect configurable, eg. timeout length for reported value 
+### At Runtime
+
+Sorel MTDC/LTDC CAN bus messages are fed to Sorella™ by calling scbi_parse() for each incoming frame.
+
+If an incoming [**scbi_frame**](#scbi_frame) reports a registered parameter and either its value has changed or a configurable period of time has elapsed since its last emission, it is stored in a queue for output.
+
+After parsing a CAN frame, repeated calls to [**scbi_pop_param**](#scbi_pop_param) provide change information on registered parameters until the call returns an empty result.
 
 # API Reference
+
+Typical Sorella™ API usage can be divided in three phases
+
+- [**Initialization**](Initialization)
+- [**Parameter Registration**](#Parameter-Registration)
+- [**Runtime**](#Runtime)
+
+## Initialization
+
+It doesn't need much to get Sorella™ up and running. It needs some means how to allocate memory and how to emit log messages. The API defines two function pointer definitions in order to provide these.
+
+#### typedef alloc_fn
+
+It is expected that a function of this type returns a pointer to available memory which is at least  **__size** bytes long and reserved for a Sorella™ instance. Platform specific alignment restrictions are supposed to be handled internally in the functon.
+
+```c
+typedef  void * (* alloc_fn) (size_t __size);
+```
+
+#### typedef log_push_fn
+
+It is expected that a function of this type handles arbitrarily emitted log messages. In oder to supply information about the gravity of emitted messages Sorella™ provides a [**enum scbi_log_level**](#enum-scbi_log_level). Filtering based on log levels is supposed to be done in the external function.
+
+```c
+typedef void (* log_push_fn) (enum scbi_log_level ll, const char * format, ...);
+```
+
+---
+
+#### enum scbi_log_level
+
+Categorizes emitted log messages into several verbosity/gravity classes. 
+
+```c
+enum scbi_log_level
+{
+  SCBI_LL_CRITICAL,
+  SCBI_LL_ERROR,
+  SCBI_LL_WARNING,
+  SCBI_LL_INFO,
+  SCBI_LL_DEBUG,
+  SCBI_LL_CNT
+};
+```
+
+---
+
+### Function scbi_init
+
+##### Parameters
+
+- [**alloc_fn**](#typedef-alloc_fn) **alloc**                         
+  - memory allocating function (required)
+- [**log_push_fn**](#typedef-log_push_fn) **log_push**        
+  - log message handling function (optional)
+- **uint32_t repost_timeout_s**  
+  - timeout in seconds until a parameter is repeated
+
+##### Return Value
+
+* **struct scbi_handle ***    
+  
+  *  transparent structure holding instance data of Sorella™
+
+```c
+struct scbi_handle * scbi_init(alloc_fn alloc, log_push_fn log_push, 
+                               uint32_t repost_timeout_s);
+```
+
+---
+
+
+
+### Parameter Registration
+
+#### scbi_register_sensor
+
+```c
+int scbi_register_sensor(struct scbi_handle * hnd, size_t id, enum scbi_dlg_sensor_type type, const char * entity);
+```
+
+---
+
+#### scbi_register_relay
+
+```c
+int scbi_register_relay(struct scbi_handle * hnd, size_t id, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, const char * entity);---
+```
+
+---
+
+#### scbi_register_overview
+
+```c
+int scbi_register_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, const char * entity);
+```
+
+---
+
+### Runtime
+
+#### scbi_parse
+
+```c
+int scbi_parse(struct scbi_handle * hnd, struct scbi_frame * frame);
+```
+
+---
+
+#### scbi_peek_param
+
+```c
+struct scbi_param_public * scbi_peek_param(struct scbi_handle * hnd);
+```
+
+---
+
+#### scbi_pop_param
+
+```c
+struct scbi_param_public * scbi_pop_param(struct scbi_handle * hnd);
+```
+
+---
+
+#### scbi_print_frame
+
+```c
+void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * txt, struct scbi_frame * frame); 
+```
+
+---
 
 ## Macros
 
@@ -319,107 +444,3 @@ enum scbi_dlg_overview_mode
 ```
 
 ---
-
-#### enum scbi_log_level
-
-```c
-enum scbi_log_level
-{
-  SCBI_LL_CRITICAL,
-  SCBI_LL_ERROR,
-  SCBI_LL_WARNING,
-  SCBI_LL_INFO,
-  SCBI_LL_DEBUG,
-  SCBI_LL_CNT
-};
-```
-
----
-
-#### struct scbi_handle
-
----
-
-#### typedef alloc_fn
-
-```c
-typedef  void * (* alloc_fn) (size_t __size);
-```
-
- ---
-
-#### typedef log_push_fn
-
-```c
-typedef void    (* log_push_fn) (enum scbi_log_level ll, const char * format, ...);
-```
-
----
-
-## Functions
-
-### Initialization
-
-
-
-#### scbi_init
-
-```c
-struct scbi_handle * scbi_init(alloc_fn alloc, log_push_fn log_push, uint32_t repost_timeout_s);
-```
-
- ---
-
-#### scbi_register_sensor
-
-```c
-int scbi_register_sensor(struct scbi_handle * hnd, size_t id, enum scbi_dlg_sensor_type type, const char * entity);
-```
-
----
-
-#### scbi_register_relay
-
-```c
-int scbi_register_relay(struct scbi_handle * hnd, size_t id, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, const char * entity);---
-```
-
- ---
-
-#### scbi_register_overview
-
-```c
-int scbi_register_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, const char * entity);
-```
-
----
-
-#### scbi_parse
-
-```c
-int scbi_parse(struct scbi_handle * hnd, struct scbi_frame * frame);
-```
-
----
-
-#### scbi_peek_param
-
-```c
-struct scbi_param_public * scbi_peek_param(struct scbi_handle * hnd);
-```
-
----
-
-#### scbi_pop_param
-
-```c
-struct scbi_param_public * scbi_pop_param(struct scbi_handle * hnd);
-```
-
----
-
-#### scbi_print_frame
-
-```c
-void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * txt, struct scbi_frame * frame);
-```
