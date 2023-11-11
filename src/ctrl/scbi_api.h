@@ -165,6 +165,6 @@ int scbi_parse(struct scbi_handle * hnd, struct scbi_frame * frame);
 struct scbi_param * scbi_peek_param(struct scbi_handle * hnd);
 struct scbi_param * scbi_pop_param(struct scbi_handle * hnd);
 
-void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * txt, struct scbi_frame * frame);
+void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * desc, struct scbi_frame * frame);
 
 #endif   // _CTRL_SCBI_API_H

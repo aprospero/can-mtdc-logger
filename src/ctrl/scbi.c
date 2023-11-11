@@ -56,6 +56,8 @@ struct scbi_handle {
 #define BYTE_FORMAT_PRINT_LEN 3 // 2 hex digits + 1 whitespace
 #define BYTE_FORMAT_COUNT 64    // max amount of bytes in resulting formatted string
 
+
+/* print uint8_t data in hex */
 static const char * format_scbi_frame_data (const struct scbi_frame * frame)
 {
   static const char hexmap[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -107,13 +109,13 @@ static int push_param(struct scbi_handle * hnd, struct scbi_param_internal * par
 
   struct scbi_param_queue_entry * quentry = hnd->queue.free;
   hnd->queue.free = quentry->next;
-  quentry->param = param;
-  if (hnd->queue.last == NULL)
-    hnd->queue.first = quentry;
-  else
-    hnd->queue.last->next = quentry;
-  hnd->queue.last = quentry;
   quentry->next = NULL;
+  quentry->param = param;
+  if (hnd->queue.last)
+    hnd->queue.last->next = quentry;
+  else
+    hnd->queue.first = quentry;
+  hnd->queue.last = quentry;
   param->in_queue = 1;
   return 0;
 }
@@ -322,7 +324,7 @@ static void scbi_compute_controller (struct scbi_handle *hnd, struct scbi_frame 
           LG_DEBUG("0x%02X says: 'I AM ALIVE!'", msg->identity.can_id);
           break;
         case CTR_I_AM_RESETED:
-          LG_DEBUG("0x%02X says: 'I AM RESET!'", msg->identity.can_id);
+          LG_DEBUG("0x%02X says: 'RESET!'", msg->identity.can_id);
           break;
         case CTR_GET_CONTROLLER_ID:
         case CTR_GET_ACTIVE_PROGRAMS_LIST:
