@@ -93,7 +93,7 @@ enum scbi_log_level
 
 ---
 
-### Function scbi_init
+#### Function scbi_init
 
 ##### Parameters
 
@@ -117,208 +117,52 @@ struct scbi_handle * scbi_init(alloc_fn alloc, log_push_fn log_push,
 
 ---
 
+## Parameter Registration
 
+There are three classes of parameters:
 
-### Parameter Registration
+* Sensors
 
-#### scbi_register_sensor
+* Relays
 
-```c
-int scbi_register_sensor(struct scbi_handle * hnd, size_t id, enum scbi_dlg_sensor_type type, const char * entity);
-```
+* Statistics (overview)
 
----
+Each class has its own registration function. Calling one of these functions registers a single parameter. If a registered parameters value is parsed in an incoming message the parameter will be reported.
 
-#### scbi_register_relay
+### Sensors
 
-```c
-int scbi_register_relay(struct scbi_handle * hnd, size_t id, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, const char * entity);---
-```
+Sensors are recognized as a certain type. This information is used in the registration process.
 
----
+#### function scbi_register_sensor
 
-#### scbi_register_overview
+##### Parameters
 
-```c
-int scbi_register_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, const char * entity);
-```
+- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
+  - Sorella™ instance handle
+- **size_t id**
+  - zero based index with id max = [**SCBI_MAX_SENSORS**](#SCBI_MAX_SENSORS-/-SCBI_MAX_RELAYS)
+- [**enum scbi_dlg_sensor_type**](#enum-scbi_dlg_sensor_type) **type**
+  - the supposed sensor type (an invalid type maps automatically to **DST_UNKNOWN**).
+- **const char * entity**
+  - unique parameter identifcation c-string. Parameters will report it on output.
 
----
+##### Return Value
 
-### Runtime
-
-#### scbi_parse
-
-```c
-int scbi_parse(struct scbi_handle * hnd, struct scbi_frame * frame);
-```
-
----
-
-#### scbi_peek_param
+- **int**    
+  
+  -  zero on success, nonzero on fail
 
 ```c
-struct scbi_param_public * scbi_peek_param(struct scbi_handle * hnd);
-```
-
----
-
-#### scbi_pop_param
-
-```c
-struct scbi_param_public * scbi_pop_param(struct scbi_handle * hnd);
-```
-
----
-
-#### scbi_print_frame
-
-```c
-void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * txt, struct scbi_frame * frame); 
-```
-
----
-
-## Macros
-
-#### SCBI_NO_LINUX_SUPPORT
-
-define this macro if there is no linux support available, namely the header 
-
-* stdint.h 
-
-* stddef.h 
-
-* linux/can.h
-
-If SCBI_NO_LINUX_SUPPORT is defined the optional header file 'scbi_compat.h' is included which recreates missing definitions.
-
-```c
-#ifndef SCBI_NO_LINUX_SUPPORT
-  #include <stdint.h>
-  #include <stddef.h>
-  #include <linux/can.h>
-#else
-  #include "scbi_compat.h"
-#endif  // SCBI_NO_LINUX_SUPPORT
-```
-
----
-
-#### SCBI_MAX_SENSORS / SCBI_MAX_RELAYS
-
-MTDC device features.
-
-The actual values are representing the featureset of MTDCv5 - these numbers probably differ on other MTDC/LTDCs.
-
-```c
-#define SCBI_MAX_SENSORS 4
-#define SCBI_MAX_RELAYS  2
-```
-
----
-
-#### SCBI_TIME_MAX
-
- [**scbi_time**](#scbi_time() max value
-
-SCBI_TIME_MAX = 2³² = 4294967296 ms
- at this value [**scbi_time**](#scbi_time() timestamps overflow to zero.
-
-```c
-#define SCBI_TIME_MAX UINT32_MAX 
-```
-
----
-
-## Types
-
-#### scbi_time
-
-timestamp in ms
-
-A monotonically increasing timestamp with 1ms accuracy.
-
-Fun fact: counting to [**SCBI_TIME_MAX**](#SCBI_TIME_MAX) = 2³² = 4294967296 ms, scbi_time will overflow to zero after 49 days, 17 hours, 2 min, 47 sec and 296 ms.
-
-```c
-typedef uint32_t scbi_time;
-```
-
----
-
-#### struct can_frame
-
-This structure holds a complete CAN frame.
-It is defined in linux/can.h or in case of missing linux header support in scbi_compat.h
-
-```c
-struct can_frame 
-{
-  uint32_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
-  union {
-    /* CAN frame payload length in byte (0 .. CAN_MAX_DLEN)
-     * was previously named can_dlc so we need to carry that
-     * name for legacy support
-     */
-    uint8_t len;
-    uint8_t can_dlc; /* deprecated */
-  } __attribute__((packed)); /* disable padding added in some ABIs */
-  uint8_t __pad; /* padding */
-  uint8_t __res0; /* reserved / padding */
-  uint8_t len8_dlc; /* optional DLC for 8 byte payload length (9 .. 15) */
-  uint8_t data[CAN_MAX_DLEN] __attribute__((aligned(8)));
-};
-```
-
----
-
-#### struct scbi_frame
-
-Data structure for passing SCBI messages to Sorella™ libraries parsing function.
-
-###### Members
-
-* [struct can_frame](#struct-can_frame) **msg** - payload consisting of a CAN bus frame
-
-* [scbi_time](#scbi_time) timestamp associated with the frame (time of reception/generation)
-
-```c
-struct scbi_frame
-{
-  struct can_frame msg;   
-  scbi_time        recvd; 
-};
-```
-
- ---
-
-#### struct scbi_param
-
-Contains data for a parameter of the MTDC/LTDC. This public API structure is the main output generated by Sorella™ library to provide a parameters value.
-
-###### Member
-
-* [enum scbi_param_type](#enum-scbi_param_type) **type** - the device feature type the parameter belongs to
-
-* const char * **name**  - the name that was used upon registration.
-
-* int32_t **value** - the actual parameter value - unit and division is defined intrinsically
-
-```c
-struct scbi_param
-{
-  enum scbi_param_type type;
-  const char *         name;
-  int32_t              value;
-};
+int scbi_register_sensor(struct scbi_handle * hnd, 
+                         size_t id, enum scbi_dlg_sensor_type type, 
+                         const char * entity);
 ```
 
 ---
 
 #### enum scbi_dlg_sensor_type
 
-Used in the registration process to differentiate between available sensor types.
+Differentiates between available sensor types.
 
 ```c
 enum scbi_dlg_sensor_type
@@ -334,6 +178,40 @@ enum scbi_dlg_sensor_type
   DST_COUNT,
   DST_UNDEFINED        = 0xFF,
 };
+```
+
+---
+
+### Relays
+
+Relays are categorized by its mode and the associated external function.
+
+#### function scbi_register_relay
+
+##### Parameters
+
+- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
+  - Sorella™ instance handle
+- **size_t id**
+  - a zero based index with id max = [**SCBI_MAX_RELAYS**](#SCBI_MAX_SENSORS-/-SCBI_MAX_RELAYS)
+- [**enum scbi_dlg_relay_mode**](#enum-scbi_dlg_relay_mode) **mode**
+  - the supposed relay mode.
+- [**enum scbi_dlg_relay_ext_fct**](#enum-scbi_dlg_relay_ext_fct) **ext_fct**
+  - the relays supposed external function.
+- **const char * entity**
+  - unique parameter identifcation c-string. Parameters will report it on output.
+
+##### Return Value
+
+- **int**    
+  
+  -  zero on success, nonzero on fail
+
+```c
+int scbi_register_relay(struct scbi_handle * hnd, 
+                        size_t id, enum scbi_dlg_relay_mode mode, 
+                        enum scbi_dlg_relay_ext_func ext_fct, 
+                        const char * entity);
 ```
 
 ---
@@ -408,6 +286,38 @@ enum scbi_dlg_relay_ext_func
 
 ---
 
+### Statistical Data (overview)
+
+These parameters are summarized in the CAN bus protocol as 'overview data'. They are addressed by stating a type and a mode.
+
+#### function scbi_register_overview
+
+##### Parameters
+
+- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
+  - Sorella™ instance handle
+- [**enum scbi_scbi_dlg_overview_type**](#enum-scbi_dlg_overview_type) **type**
+- - the requested data type.
+- [**enum scbi_dlg_overview_mode**](#enum-scbi_dlg_overview_mode) **mode**
+  - the relays supposed external function.
+- **const char * entity**
+  - unique parameter identifcation c-string. Parameters will report it on output.
+
+##### Return Value
+
+- **int**    
+  
+  -  zero on success, nonzero on fail
+
+```c
+int scbi_register_overview(struct scbi_handle * hnd, 
+                           enum scbi_dlg_overview_type type, 
+                           enum scbi_dlg_overview_mode mode, 
+                           const char * entity);
+```
+
+---
+
 #### enum scbi_dlg_overview_type
 
 Used in the registration process for overview parameters to differentiate between available statistical values regarding yield over time.
@@ -441,6 +351,168 @@ enum scbi_dlg_overview_mode
   DOM_02    = 0x02,
   DOM_COUNT
 };
+```
+
+---
+
+## Runtime
+
+### Providing Input
+
+To parse a CAN bus message from an MTDC/LTDC device the CAN frame data must be provided along with a timestamp by using a predefined structure.
+
+#### function scbi_parse
+
+##### Parameters
+
+- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
+  - Sorella™ instance handle
+- **size_t id**
+  - a zero based index with id max = [**SCBI_MAX_RELAYS**](#SCBI_MAX_SENSORS-/-SCBI_MAX_RELAYS)
+- [**struct scbi_frame**](#struct-scbi_frame) *** frame**
+  - the data frame to parse
+
+##### Return Value
+
+- **int**    
+  
+  -  zero on success, nonzero on fail - to date Sorella™ only supports single extended CAN frame messages. Bulk messages may cause a nonzero return.
+
+```c
+int scbi_parse(struct scbi_handle * hnd, struct scbi_frame * frame);
+```
+
+---
+
+### Reap output
+
+Sorella™ provides parameters by popping them from a queue. It delivers a structure containing type (sensor/relay/statistics), name (entity provided at  registration) and its actual value. 
+
+#### function scbi_pop_param
+
+Retrieves the next parameter from Sorellas™ output queue.
+
+##### Parameters
+
+- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
+  - Sorella™ instance handle
+
+##### Return Value
+
+- [**struct scbi_param**](#struct-scbi_param)
+  
+  - a structure containing a parameters identifyers and its value
+
+```c
+struct scbi_param * scbi_pop_param(struct scbi_handle * hnd);
+```
+
+---
+
+#### function scbi_peek_param
+
+Does exactly the same as pop, but doesn't delete the parameter from Sorellas™ internal queue. If for any reason further processing of a peeked parameter is not possible it can be later reattempted by calling peek/pop again. After successful processing a final call to [**scbi_pop_param**](#function-scbi_pop_param) is necessary to go on with the next parameter.
+
+##### Parameters
+
+- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
+  - Sorella™ instance handle
+
+##### Return Value
+
+- [**struct scbi_param**](#struct-scbi_param)
+  
+  - a structure containing a parameters identifyers and its value
+
+```c
+struct scbi_param * scbi_peek_param(struct scbi_handle * hnd);
+```
+
+---
+
+#### struct scbi_param
+
+Contains data for a parameter of the MTDC/LTDC. This public API structure is the main output generated by Sorella™ library to provide a parameters value.
+
+###### Member
+
+- [enum scbi_param_type](#enum-scbi_param_type) **type** - the device feature type the parameter belongs to
+
+- const char * **name** - the name that was used upon registration.
+
+- int32_t **value** - the actual parameter value - unit and division is defined intrinsically
+
+```c
+struct scbi_param
+{
+  enum scbi_param_type type;
+  const char *         name;
+  int32_t              value;
+};
+```
+
+---
+
+## Helper functions
+
+#### scbi_print_frame
+
+logs a data frame with the help of the logging function given at initialization time.
+
+```c
+void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * txt, struct scbi_frame * frame); 
+```
+
+---
+
+## Macros
+
+#### SCBI_NO_LINUX_SUPPORT
+
+define this macro if there is no linux support available, namely the header 
+
+* stdint.h 
+
+* stddef.h 
+
+* linux/can.h
+
+If SCBI_NO_LINUX_SUPPORT is defined the optional header file 'scbi_compat.h' is included which recreates missing definitions.
+
+```c
+#ifndef SCBI_NO_LINUX_SUPPORT
+  #include <stdint.h>
+  #include <stddef.h>
+  #include <linux/can.h>
+#else
+  #include "scbi_compat.h"
+#endif  // SCBI_NO_LINUX_SUPPORT
+```
+
+---
+
+#### SCBI_MAX_SENSORS / SCBI_MAX_RELAYS
+
+MTDC device features.
+
+The actual values are representing the featureset of MTDCv5 - these numbers probably differ on other MTDC/LTDCs.
+
+```c
+#define SCBI_MAX_SENSORS 4
+#define SCBI_MAX_RELAYS  2
+```
+
+---
+
+#### SCBI_TIME_MAX
+
+ [**scbi_time**](#scbi_time() max value
+
+SCBI_TIME_MAX = 2³² = 4294967296 ms
+ at this value [**scbi_time**](#scbi_time() timestamps overflow to zero.
+
+```c
+#define SCBI_TIME_MAX UINT32_MAX 
 ```
 
 ---
