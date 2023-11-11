@@ -118,36 +118,38 @@ static int push_param(struct scbi_handle * hnd, struct scbi_param_internal * par
   return 0;
 }
 
-static inline void update_param(struct scbi_handle * hnd, scbi_time recvd, struct scbi_param_internal * param, int32_t value)
+static inline int update_param(struct scbi_handle * hnd, scbi_time recvd, struct scbi_param_internal * param, int32_t value)
 {
   if (param->public.name && (param->public.value != value || scbi_time_diff(param->last_tx, recvd) > hnd->repost_timeout_s * 1000))
   {
     param->public.value = value;
     param->last_tx = recvd;
-    push_param(hnd, param);
+    return push_param(hnd, param);
   }
+  return 0;
 }
 
-static inline void update_sensor(struct scbi_handle * hnd, scbi_time recvd, enum scbi_dlg_sensor_type type, size_t id, int32_t value)
+static inline int update_sensor(struct scbi_handle * hnd, scbi_time recvd, enum scbi_dlg_sensor_type type, size_t id, int32_t value)
 {
-  if (type >= DST_COUNT)
-    type = DST_UNKNOWN;
-  if (id < SCBI_MAX_SENSORS)
-    update_param(hnd, recvd, &hnd->param.sensor[type][id], value);
+  if (type >= DST_COUNT || id >= SCBI_MAX_SENSORS)
+    return -1;
+  return update_param(hnd, recvd, &hnd->param.sensor[type][id], value);
 }
 
-static inline void update_relay(struct scbi_handle * hnd, scbi_time recvd, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, size_t id, int32_t value)
+static inline int update_relay(struct scbi_handle * hnd, scbi_time recvd, enum scbi_dlg_relay_mode mode, enum scbi_dlg_relay_ext_func efct, size_t id, int32_t value)
 {
-  if (efct == DRE_DISABLED || efct == DRE_UNSELECTED)
-    efct -= DRE_DISABLED - (DRE_COUNT - 2);  /* last two extfuncts (0xFE & 0XFF) are wrapped to the end of the map */
-  if (mode < DRM_COUNT && efct < DRE_COUNT && id < SCBI_MAX_RELAYS)
-    update_param(hnd, recvd, &hnd->param.relay[mode][efct][id], value);
+  if (efct == DRE_DISABLED || efct == DRE_UNSELECTED) /* last two extfuncts (0xFE & 0XFF) are wrapped to the end of the map */
+    efct -= DRE_DISABLED - (DRE_COUNT - 2);
+  if (mode >= DRM_COUNT || efct >= DRE_COUNT || id >= SCBI_MAX_RELAYS)
+    return -1;
+  return update_param(hnd, recvd, &hnd->param.relay[mode][efct][id], value);
 }
 
-static inline void update_overview(struct scbi_handle * hnd, scbi_time recvd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, int value)
+static inline int update_overview(struct scbi_handle * hnd, scbi_time recvd, enum scbi_dlg_overview_type type, enum scbi_dlg_overview_mode mode, int value)
 {
-  if (type < DOT_COUNT && mode < DOM_COUNT)
-    update_param(hnd, recvd, &hnd->param.oview[type][mode], value);
+  if (type >= DOT_COUNT || mode > DOM_COUNT)
+    return -1;
+  return update_param(hnd, recvd, &hnd->param.oview[type][mode], value);
 }
 
 
@@ -264,19 +266,25 @@ static void scbi_compute_datalogger (struct scbi_handle * hnd, struct scbi_frame
       LG_INFO("Datalogger reserve msgs not supported yet.");
       break;
     case CAN_MSG_RESPONSE:
+    {
+      int ret;
       switch (adid->scbi_id.func)
       {
         case DLF_SENSOR:
-          LG_DEBUG("SENSOR%u (%u) -> %d (%s).", msg->dlg.sensor.id, msg->dlg.sensor.type, msg->dlg.sensor.value, format_scbi_frame_data(frame));
-          update_sensor(hnd, frame->recvd, msg->dlg.sensor.type, msg->dlg.sensor.id,  msg->dlg.sensor.value);
+          ret = update_sensor(hnd, frame->recvd, msg->dlg.sensor.type, msg->dlg.sensor.id,  msg->dlg.sensor.value);
+          if (hnd->fn.log_push)
+            hnd->fn.log_push(ret ? SCBI_LL_ERROR : SCBI_LL_DEBUG, "SENSOR%u (%u) -> %d (%s).", msg->dlg.sensor.id, msg->dlg.sensor.type, msg->dlg.sensor.value, format_scbi_frame_data(frame));
           break;
         case DLF_RELAY:
-          LG_DEBUG("RELAY%u (%u/%u) -> %u (%s).", msg->dlg.relay.id, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.value, format_scbi_frame_data(frame));
-          update_relay(hnd, frame->recvd, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.id, msg->dlg.relay.value);
+          ret = update_relay(hnd, frame->recvd, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.id, msg->dlg.relay.value);
+          if (hnd->fn.log_push)
+            hnd->fn.log_push(ret ? SCBI_LL_ERROR : SCBI_LL_DEBUG, "RELAY%u (%u/%u) -> %u (%s).", msg->dlg.relay.id, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.value, format_scbi_frame_data(frame));
           break;
         case DLG_OVERVIEW:
-          LG_DEBUG("overview %u-%u -> %uh/%ukWh. - (%s)", msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.oview.hours, msg->dlg.oview.heat_yield, format_scbi_frame_data(frame));
-          update_overview(hnd, frame->recvd, msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.relay.value);
+          ret = update_overview(hnd, frame->recvd, msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.relay.value);
+          if (hnd->fn.log_push)
+            hnd->fn.log_push(ret ? SCBI_LL_ERROR : SCBI_LL_DEBUG, "overview %u-%u -> %uh/%ukWh. - (%s)", msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.oview.hours, msg->dlg.oview.heat_yield, format_scbi_frame_data(frame));
+
           break;
         case DLF_UNDEFINED:
         case DLG_HYDRAULIC_PROGRAM:
@@ -288,8 +296,8 @@ static void scbi_compute_datalogger (struct scbi_handle * hnd, struct scbi_frame
           break;
       }
       break;
+    }
   }
-
 }
 
 static void scbi_compute_controller (struct scbi_handle *hnd, struct scbi_frame * frame)
