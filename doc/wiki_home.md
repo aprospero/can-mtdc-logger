@@ -30,8 +30,6 @@ Yet to accomplish:
 
 * Linux application
   
-  * make mqtt broker access configurable
-  
   * parameter registration and application configuration via config file
   
   * make mqtt connection secure
@@ -60,7 +58,7 @@ This setup is one of many was to go ahead. It is eg. possible to fire up an Ardu
 # How my setup works
 
 * The MTDC device is attached via CAN-bus to the SoC board. 
-* The Linux [application](./tool_help.md) is serving as translator between SCBI protocol and MQTT, sending mosquitto anything about the state of the MTDC device.
+* The Linux [application](./tool_help.md) is serving as translator between SCBI protocol and MQTT, sending mosquitto every parameter change of the MTDC device.
 * Telegraf in turn pipes data snippets of certain topics into influxdb, which is responsible for data persistence and answering queries.
 * grafana queries influxdb for certain datasets, after configuring influxdb as data source and creating a matching dashboard.
 

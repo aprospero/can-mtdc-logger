@@ -24,14 +24,16 @@ int parseArgs(int argc, char * argv[], struct cansorella_config * config)
   config->log_level    = DEFAULT_LOG_LEVEL;
   config->can_device   = DEFAULT_CAN_DEVICE;
 
-  while ((opt = getopt(argc, argv, "hb:f:l:Vv:w:s:g:c:a:d:")) != -1)
+  config->mqtt.remote_address = DEFAULT_MQTT_REMOTE;
+  config->mqtt.remote_port    = DEFAULT_MQTT_PORT;
+  config->mqtt.client_id      = DEFAULT_MQTT_CLIENT_ID;
+  config->mqtt.topic          = DEFAULT_MQTT_TOPIC;
+  config->mqtt.qos            = DEFAULT_MQTT_QOS;
+
+  while ((opt = getopt(argc, argv, "hf:Vv:d:m:r:p:i:t:q:")) != -1)
   {
     switch (opt)
     {
-      case 'h':
-      {
-        goto ON_HELP;
-      }
       case 'd':
       {
         if (*optarg == '\0')
@@ -66,6 +68,56 @@ int parseArgs(int argc, char * argv[], struct cansorella_config * config)
         config->log_facility = lf;
         break;
       }
+      case 'r':
+      {
+        config->mqtt.remote_address = optarg;
+        if (*optarg == '\0') {
+          fprintf(stderr, "Error: empty MQTTY remote address.\n");
+          goto ON_ERROR;
+        }
+        break;
+      }
+      case 'p':
+      {
+        config->mqtt.remote_port = strtol(optarg, NULL, 0);
+        if (config->mqtt.remote_port < 1 || config->mqtt.remote_port > 65535) {
+          fprintf(stderr, "Error: invalid MQTT remote port.\n");
+          goto ON_ERROR;
+        }
+        break;
+      }
+      case 'i':
+      {
+        config->mqtt.client_id = optarg;
+        if (*optarg == '\0') {
+          fprintf(stderr, "Error: empty MQTT client_id.\n");
+          goto ON_ERROR;
+        }
+        break;
+      }
+      case 't':
+      {
+        config->mqtt.topic = optarg;
+        if (*optarg == '\0') {
+          fprintf(stderr, "Error: empty MQTTY topic.\n");
+          goto ON_ERROR;
+        }
+        break;
+      }
+      case 'q':
+      {
+        config->mqtt.qos = strtol(optarg, &end, 0);
+        if (config->mqtt.qos < 0 || config->mqtt.remote_port > 2 || end == optarg) {
+          fprintf(stderr, "Error: invalid QoS.\n");
+          goto ON_ERROR;
+        }
+        break;
+      }
+
+      case 'h':
+      {
+        goto ON_HELP;
+      }
       case 'V':
       {
         goto ON_VERSION;
@@ -81,7 +133,7 @@ int parseArgs(int argc, char * argv[], struct cansorella_config * config)
 ON_ERROR:
   err = 1;
 ON_HELP:
-  fprintf(err ? stderr : stdout, "usage: %s [-hV] [-d <can-device>] [-v <log level>] [-f log facility]\n", config->prg_name);
+  fprintf(err ? stderr : stdout, "usage: %s [-hV] [-d <can-device>] [-r <mqtt remote address>] [-p <mqtt remote port>] [-i <mqtt client-id>] [-t <mqtt topic>] [-q <mqtt QoS>] [-v <log level>] [-f <log facility>]\n", config->prg_name);
   if (err)
     exit(1);
   fprintf(stdout, "\nOptions:\n");
@@ -92,6 +144,13 @@ ON_HELP:
   fprintf(stdout, "  -f: Log Facility. Available log facilities:\n");
   for (idx = 0; idx < LF_COUNT; idx++)
     fprintf(stdout, "%s%s%s", log_get_facility_name((enum log_facility) idx), idx == DEFAULT_LOG_FACILITY ? " (default)" :  "", idx < LF_COUNT - 1 ? idx % 8 == 7 ? ",\n" : ", " : ".\n");
+
+  fprintf(stdout, "  -r: MQTT brokers remote IP address or server name. Default is: " DEFAULT_MQTT_REMOTE "\n");
+  fprintf(stdout, "  -p: MQTT brokers remote port. Default is: %d\n", DEFAULT_MQTT_PORT);
+  fprintf(stdout, "  -i: MQTT client id (also used as user name). Default is: " DEFAULT_MQTT_CLIENT_ID "\n");
+  fprintf(stdout, "  -t: MQTT topic. Default is: " DEFAULT_MQTT_TOPIC "\n");
+  fprintf(stdout, "  -q: MQTT quality of service. Default is: %d\n", DEFAULT_MQTT_QOS);
+
   fprintf(stdout, "  -h: Print usage information and exit\n");
   fprintf(stdout, "  -V: Print version information and exit\n");
   fflush(stdout);
