@@ -235,7 +235,7 @@ void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const c
   union scbi_address_id *adid = (union scbi_address_id*) &frame->msg.can_id;
   if (hnd->fn.log_push) {
     hnd->fn.log_push(ll, "(%s) %s: % 6ums CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data:%s.",
-                  msg_type, txt, frame->recvd, adid->address_id,
+                  msg_type, txt == NULL ? "" : txt, frame->recvd, adid->address_id,
                   adid->scbi_id.prog, adid->scbi_id.client, adid->scbi_id.func, adid->scbi_id.prot, adid->scbi_id.msg,
                   adid->scbi_id.flg_err ? " ERR" : " ---", adid->scbi_id.flg_eff ? "-EFF" : "----", adid->scbi_id.flg_rtr ? "-RTR" : "----",
                   frame->msg.len, format_scbi_frame_data (frame));
