@@ -1,13 +1,13 @@
 #ifndef _H_ARGS
 #define _H_ARGS
 
-#include "linuxtools/ctrl/logger.h"
+#include "ctrl/logger.h"
 
 
 #define DEFAULT_LOG_FACILITY LF_LOCAL0
 #define DEFAULT_LOG_LEVEL    LL_ERROR
 
-#define DEFAULT_CAN_DEVICE "/dev/can0"
+#define DEFAULT_CAN_DEVICE "can0"
 
 
 struct cansorella_config

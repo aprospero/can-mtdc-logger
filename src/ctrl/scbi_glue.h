@@ -1,7 +1,16 @@
-#ifndef _CTRL_SCBI__H
-#define _CTRL_SCBI__H
+#ifndef _CTRL_SCBI_GLUE__H
+#define _CTRL_SCBI_GLUE__H
+
+#include <stdint.h>
 
 #include "scbi_api.h"
+
+#define SCBI_REPOST_TIMEOUT_SEC 300 // doublette values are blocked from propagation for 5min.
+
+#define BYTE2TEMP(x) ((uint8_t) (((uint16_t) (x) * 100) / 255))
+#define TEMP2BYTE(x) ((unit8_t) (((uint16_t) (x) * 255) / 100))
+
+struct scbi_handle;
 
 enum scbi_protocol
 {
@@ -54,21 +63,6 @@ enum scbi_prog_type          /* CAN_FORMAT_0 protocol definitions */
   PRG_CBCS                    = 0x95
 };
 
-
-enum scbi_dlg_function_type   /* PRG_DATALOGGER_MONITOR related functions */
-{
-  DLF_UNDEFINED            = 0x00,
-  DLF_SENSOR               = 0x01,
-  DLF_RELAY                = 0x02,
-  DLG_HYDRAULIC_PROGRAM    = 0x03,
-  DLG_ERROR_MESSAGE        = 0x04,
-  DLG_PARAM_MONITORING     = 0x05,
-  DLG_STATISTIC            = 0x06,
-  DLG_OVERVIEW             = 0x07,
-  DLG_HYDRAULIC_CONFIG     = 0x08
-};
-
-
 enum scbi_ctr_function_type    /* PRG_CONTROLLER related functions */
 {
   CTR_HAS_ANYBODY_HERE         = 0x00, /* discover CAN subscribers */
@@ -102,6 +96,8 @@ struct scbi_dlg_sensor_msg
   uint8_t  subtype;
 } __attribute__((packed));
 
+
+
 // message definition for relay data
 
 struct scbi_dlg_relay_msg
@@ -111,6 +107,7 @@ struct scbi_dlg_relay_msg
   uint8_t value;
   uint8_t exfunc[2];
 } __attribute__((packed));
+
 
 // message definition for overview data
 #if 0
@@ -132,7 +129,6 @@ struct scbi_dlg_overview_msg  /* this is the definition by experience */
    uint32_t heat_yield;
 } __attribute__((packed));
 #endif
-
 
 
 union scbi_data_logger_msg
@@ -230,5 +226,12 @@ union scbi_msg_content
   struct scbi_avail_sensor_req_msg avail_sensor;
 };
 
+void scbi_glue_log(enum scbi_log_level ll, const char * format, ...);
 
-#endif   // _CTRL_SCBI__H
+struct scbi_glue_handle * scbi_glue_init (struct scbi_handle * scbi_hnd, const char *port, void * broker);
+
+void scbi_glue_update(struct scbi_glue_handle * hnd);
+int  scbi_glue_close(struct scbi_glue_handle * hnd);
+
+
+#endif   // _CTRL_SCBI_GLUE__H
