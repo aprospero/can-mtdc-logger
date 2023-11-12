@@ -112,7 +112,6 @@ void scbi_glue_update (struct scbi_glue_handle * hnd)
   while (hnd->read_can_port)
   {
     struct timeval timeout = { 1, 0 };
-    struct timeval tv;
     fd_set readSet;
     FD_ZERO(&readSet);
     FD_SET(hnd->soc, &readSet);
@@ -131,7 +130,7 @@ void scbi_glue_update (struct scbi_glue_handle * hnd)
           continue;
         }
 
-        if (rx < sizeof(struct can_frame))
+        if ((unsigned int) rx < sizeof(struct can_frame))
         {
           scbi_print_frame (hnd->scbi, SCBI_LL_ERROR, "FRAME", "too short", &frame);
           continue;
