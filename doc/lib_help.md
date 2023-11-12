@@ -18,7 +18,7 @@
 
 #### Runtime environment:
 
-One instance of scbi for 4 sensors and 2 relays consumes 13KiByte data memory. Code size depends on build system config.
+One instance of Sorella™ for 4 sensors and 2 relays consumes 13KiByte data memory. Code size depends on build system config.
 
 # Sorella™ API
 
@@ -129,7 +129,7 @@ There are three classes of parameters:
 
 * Statistics (overview)
 
-Each class has its own registration function. Calling one of these functions registers a single parameter. If a registered parameters value is read from an incoming message the parameter will be reported.
+Each class has its own registration function. Calling one of these functions registers a single parameter. If a registered parameters value is read from an incoming message the parameter will be reported. A parameter can only be registered once. A subsequent call of a register function with the same parameter selection will result in overwriting the registration information from the first call. 
 
 ### Sensors
 
@@ -146,13 +146,13 @@ Sensors are recognized as a certain type. This information is used in the regist
 - [**enum scbi_dlg_sensor_type**](#enum-scbi_dlg_sensor_type) **type**
   - the supposed sensor type
 - **const char * entity**
-  - unique parameter identifcation c-string. Parameters will report reference it on output.
+  - unique parameter identifcation c-string. Parameters will reference it on output.
 
 ##### Return Value
 
-- **int**    
+- **int**
   
-  -  zero on success, nonzero on fail
+  - zero on success, nonzero on fail
 
 ```c
 int scbi_register_sensor(struct scbi_handle * hnd, 
