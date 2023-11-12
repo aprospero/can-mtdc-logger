@@ -18,7 +18,7 @@
 
 #### Runtime environment:
 
-One instance of scbi for 4 sensors and 2 relays consumes 13KiByte data memory. Code size depends on build system config.
+One instance of Sorella™ for 4 sensors and 2 relays consumes 13KiByte data memory. Code size depends on build system config.
 
 # Sorella™ API
 
@@ -26,32 +26,34 @@ One instance of scbi for 4 sensors and 2 relays consumes 13KiByte data memory. C
 
 ### Abstract
 
-Sorella™ API provides a mechanism to register MTDC/LTDC device parameters for observation and a parsing engine for interpreting MTDC/LTDC CAN-bus frames to discrete device parameters.
+Sorella™ API provides a parsing engine for interpreting MTDC/LTDC CAN-bus frames to discrete device parameters. Further there is a mechanism to register on single MTDC/LTDC device parameters for runtime observation.
 
 ### Configuration/Initialization
 
 Setting up Sorella™ is divided in two phases.
 
-- initialization of data structures and auxiliary capabilities (malloc, logging).
+- initialization of data structures and auxiliary capabilities (malloc, logging)
 - parameter registration
 
 The data structures are initialized with a call to [**scbi_init**](#function-scbi_init). The call gets as parameters a function for memory allocation (required) and a function for handling log output (optional). In addition, the timeout is defined for which a parameter is not repeated without a value change.
+
+Registration of parameters takes place by calling one of the registration functions for [sensors](#function-scbi_register_sensor), [relays](#function-scbi_register_relay) und [statistic parameters](#function-scbi_register_overview).
 
 ### At Runtime
 
 Sorel MTDC/LTDC CAN bus messages are fed to Sorella™ by calling scbi_parse() for each incoming frame.
 
-If an incoming [**scbi_frame**](#scbi_frame) reports a registered parameter and either its value has changed or a configurable period of time has elapsed since its last emission, it is stored in a queue for output.
+If an incoming [**scbi_frame**](#struct-scbi_frame) reports a registered parameter and either its value has changed or a configurable period of time has elapsed since its last emission, it is stored in a queue for output.
 
-After parsing a CAN frame, repeated calls to [**scbi_pop_param**](#scbi_pop_param) provide change information on registered parameters until the call returns an empty result.
+After parsing a frame, repeated calls to [**scbi_pop_param**](#function-scbi_pop_param) provide change information on registered parameters until the call returns an empty result.
 
 # API Reference
 
 Typical Sorella™ API usage can be divided in three phases
 
-- [**Initialization**](Initialization)
-- [**Parameter Registration**](#Parameter-Registration)
-- [**Runtime**](#Runtime)
+- [Initialization](#Initialization)
+- [Parameter Registration](#Parameter-Registration)
+- [Runtime](#Runtime)
 
 ## Initialization
 
@@ -108,7 +110,7 @@ Initializes Sorella™ internal data structures.
 
 ##### Return Value
 
-* **struct scbi_handle ***    
+* **struct scbi_handle \***    
   
   *  transparent structure holding instance data of Sorella™
 
@@ -121,15 +123,32 @@ struct scbi_handle * scbi_init(alloc_fn alloc, log_push_fn log_push,
 
 ## Parameter Registration
 
-There are three classes of parameters:
+There are three types of parameters:
 
-* Sensors
+* [Sensors](#Sensors)
 
-* Relays
+* [Relays](#Relays)
 
-* Statistics (overview)
+* [Statistics (overview)](#Statistical-Data-overview)
 
-Each class has its own registration function. Calling one of these functions registers a single parameter. If a registered parameters value is read from an incoming message the parameter will be reported.
+Each type has its own registration function. Calling one of these functions registers a single parameter. If a registered parameters value is read from an incoming message the parameter will be reported. A parameter can only be registered once. A subsequent call of a register function for the same parameter will result in overwriting the registration information from the first call. Unregister is possible by setting entity to NULL but note that an unregistered parameter can still pop up one last time from the output queue.
+
+#### enum **scbi_param_type**
+
+datalogger monitor parameter types
+
+```c
+enum scbi_param_type
+{
+  SCBI_PARAM_TYPE_SENSOR,
+  SCBI_PARAM_TYPE_RELAY,
+  SCBI_PARAM_TYPE_OVERVIEW,
+  SCBI_PARAM_TYPE_COUNT,
+  SCBI_PARAM_TYPE_NONE
+};
+```
+
+---
 
 ### Sensors
 
@@ -139,20 +158,20 @@ Sensors are recognized as a certain type. This information is used in the regist
 
 ##### Parameters
 
-- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
+- **[struct scbi_handle](Return-Value) * hnd**                         
   - Sorella™ instance handle
 - **size_t id**
-  - zero based index with id max = [**SCBI_MAX_SENSORS**](#SCBI_MAX_SENSORS-/-SCBI_MAX_RELAYS)
+  - zero based index with id max = [**SCBI_MAX_SENSORS**](#SCBI_MAX_SENSORS--SCBI_MAX_RELAYS)
 - [**enum scbi_dlg_sensor_type**](#enum-scbi_dlg_sensor_type) **type**
   - the supposed sensor type
 - **const char * entity**
-  - unique parameter identifcation c-string. Parameters will report reference it on output.
+  - unique parameter identifcation c-string. Parameters will reference it on output.
 
 ##### Return Value
 
-- **int**    
+- **int**
   
-  -  zero on success, nonzero on fail
+  - zero on success, nonzero on fail
 
 ```c
 int scbi_register_sensor(struct scbi_handle * hnd, 
@@ -192,13 +211,13 @@ Relays are categorized by its mode and the associated external function.
 
 ##### Parameters
 
-- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
+- **[struct scbi_handle](Return-Value) * hnd**                  
   - Sorella™ instance handle
 - **size_t id**
-  - a zero based index with id max = [**SCBI_MAX_RELAYS**](#SCBI_MAX_SENSORS-/-SCBI_MAX_RELAYS)
+  - a zero based index with id max = [**SCBI_MAX_RELAYS**](#SCBI_MAX_SENSORS--SCBI_MAX_RELAYS)
 - [**enum scbi_dlg_relay_mode**](#enum-scbi_dlg_relay_mode) **mode**
   - the supposed relay mode.
-- [**enum scbi_dlg_relay_ext_fct**](#enum-scbi_dlg_relay_ext_fct) **ext_fct**
+- [**enum scbi_dlg_relay_ext_fct**](#enum-scbi_dlg_relay_ext_func) **ext_fct**
   - the relays supposed external function.
 - **const char * entity**
   - unique parameter identifcation c-string. Parameters will report it on output.
@@ -296,7 +315,7 @@ These parameters are summarized in the CAN bus protocol as 'overview data'. They
 
 ##### Parameters
 
-- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
+- **[struct scbi_handle](Return-Value) * hnd**                     
   - Sorella™ instance handle
 - [**enum scbi_scbi_dlg_overview_type**](#enum-scbi_dlg_overview_type) **type**
 - - the requested data type.
@@ -363,15 +382,69 @@ enum scbi_dlg_overview_mode
 
 To parse a CAN bus message from an MTDC/LTDC device the CAN frame data must be provided along with a timestamp by using a predefined structure.
 
+#### struct scbi_frame
+
+Data structure for passing SCBI messages to Sorellas™ parsing function.
+
+###### Members
+
+* [struct can_frame](#struct-can_frame) **msg** - payload consisting of a CAN bus frame
+
+* [scbi_time](#typedef-scbi_time) **recvd** - timestamp holding time of dispatch/reception
+
+```c
+struct scbi_frame
+{
+  struct can_frame msg;    
+  scbi_time        recvd; 
+};
+```
+
+ ---
+
+#### struct can_frame
+
+From the linux header linux/can.h - the CAN-frame definition (extended frame).
+
+```c
+struct can_frame {
+  uint32_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
+  union {
+    /* CAN frame payload length in byte (0 .. CAN_MAX_DLEN)
+     * was previously named can_dlc so we need to carry that
+     * name for legacy support
+     */
+    uint8_t len;
+    uint8_t can_dlc; /* deprecated */
+  } __attribute__((packed)); /* disable padding added in some ABIs */
+  uint8_t __pad; /* padding */
+  uint8_t __res0; /* reserved / padding */
+  uint8_t len8_dlc; /* optional DLC for 8 byte payload length (9 .. 15) */
+  uint8_t data[CAN_MAX_DLEN] __attribute__((aligned(8)));
+};
+```
+
+ ---
+
+#### typedef scbi_time
+
+A simple revolving timestamp in ms, overflowing at **[SCBI_TIME_MAX](#SCBI_TIME_MAX)** to zero.
+
+```c
+typedef uint32_t scbi_time;
+```
+
+ ---
+
 #### function scbi_parse
 
 ##### Parameters
 
-- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
+- **[struct scbi_handle](Return-Value) * hnd**    
   - Sorella™ instance handle
 - **size_t id**
-  - a zero based index with id max = [**SCBI_MAX_RELAYS**](#SCBI_MAX_SENSORS-/-SCBI_MAX_RELAYS)
-- [**struct scbi_frame**](#struct-scbi_frame) *** frame**
+  - a zero based index with id max = [**SCBI_MAX_RELAYS**](#SCBI_MAX_SENSORS--SCBI_MAX_RELAYS)
+- **[struct scbi_frame](#struct-scbi_frame) * frame**
   - the data frame to parse
 
 ##### Return Value
@@ -390,55 +463,13 @@ int scbi_parse(struct scbi_handle * hnd, struct scbi_frame * frame);
 
 Sorella™ provides parameters by popping them from a queue. It delivers a structure containing type (sensor/relay/statistics), name (entity provided at  registration) and its actual value. 
 
-#### function scbi_pop_param
-
-Retrieves the next parameter from Sorellas™ output queue.
-
-##### Parameters
-
-- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
-  - Sorella™ instance handle
-
-##### Return Value
-
-- [**struct scbi_param**](#struct-scbi_param)
-  
-  - a structure containing a parameters identifyers and its value
-
-```c
-struct scbi_param * scbi_pop_param(struct scbi_handle * hnd);
-```
-
----
-
-#### function scbi_peek_param
-
-Does exactly the same as pop, but doesn't delete the parameter from Sorellas™ internal queue. If for any reason further processing of a peeked parameter is not possible it can be later reattempted by calling peek/pop again. After successful processing a final call to [**scbi_pop_param**](#function-scbi_pop_param) is necessary to go on with the next parameter.
-
-##### Parameters
-
-- [**struct scbi_handle**](#struct-scbi_handle) *** hnd**                         
-  - Sorella™ instance handle
-
-##### Return Value
-
-- [**struct scbi_param**](#struct-scbi_param)
-  
-  - a structure containing a parameters identifyers and its value
-
-```c
-struct scbi_param * scbi_peek_param(struct scbi_handle * hnd);
-```
-
----
-
 #### struct scbi_param
 
-Contains data for a parameter of the MTDC/LTDC. This public API structure is the main output generated by Sorella™ library to provide a parameters value.
+Contains data for a parameter of the MTDC/LTDC.
 
 ###### Member
 
-- [enum scbi_param_type](#enum-scbi_param_type) **type** - the device feature type the parameter belongs to
+- **[enum scbi_param_type](#enum-scbi_param_type)** **type** - the device feature type the parameter belongs to
 
 - const char * **name** - the name that was used upon registration.
 
@@ -455,14 +486,71 @@ struct scbi_param
 
 ---
 
+#### function scbi_pop_param
+
+Retrieves the next parameter from Sorellas™ output queue.
+
+##### Parameters
+
+- **[struct scbi_handle](Return-Value) * hnd**                      
+  - Sorella™ instance handle
+
+##### Return Value
+
+- **[struct scbi_param](#struct-scbi_param)**
+  
+  - a structure containing a parameters identifyers and its value
+
+```c
+struct scbi_param * scbi_pop_param(struct scbi_handle * hnd);
+```
+
+---
+
+#### function scbi_peek_param
+
+Does exactly the same as pop, but doesn't delete the parameter from Sorellas™ internal queue. If for any reason further processing of a peeked parameter is not possible it can be later reattempted by calling peek/pop again. After successful processing a final call to [**scbi_pop_param**](#function-scbi_pop_param) is necessary to go on with the next parameter.
+
+##### Parameters
+
+- **[struct scbi_handle](Return-Value) * hnd**                   
+  - Sorella™ instance handle
+
+##### Return Value
+
+- **[struct scbi_param](#struct-scbi_param)**
+  
+  - a structure containing a parameters identifyers and its value
+
+```c
+struct scbi_param * scbi_peek_param(struct scbi_handle * hnd);
+```
+
+---
+
 ## Helper functions
 
 #### scbi_print_frame
 
-logs a data frame with the help of the logging function given at initialization time.
+logs a data frame if a log message function was provided when calling **[scbi_init](#function-scbi_init)**.
+
+##### Parameters
+
+- **[struct scbi_handle](Return-Value) * hnd**                      
+  - Sorella™ instance handle
+- **[enum scbi_log_level](#enum-scbi_log_level) ll**
+  - which loglevel should the log message get
+- **const char * msg_type** 
+  - will be printed embedded in braces at beginning of log message 
+- **const char * txt** (optional) 
+  - additional text following msg_type
+- **[struct scbi_frame](#struct-scbi_frame) * frame**
+  - frame data to be printed
 
 ```c
-void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * txt, struct scbi_frame * frame); 
+void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll,
+                       const char * msg_type, const char * txt, 
+                       struct scbi_frame * frame); 
 ```
 
 ---
@@ -508,10 +596,10 @@ The actual values are representing the featureset of MTDCv5 - these numbers prob
 
 #### SCBI_TIME_MAX
 
- [**scbi_time**](#scbi_time() max value
+ [**scbi_time**](#typedef-scbi_time) max value
 
 SCBI_TIME_MAX = 2³² = 4294967296 ms
- at this value [**scbi_time**](#scbi_time() timestamps overflow to zero.
+ at this value scbi timestamps overflow to zero.
 
 ```c
 #define SCBI_TIME_MAX UINT32_MAX 
