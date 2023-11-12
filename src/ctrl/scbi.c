@@ -211,14 +211,7 @@ int scbi_register_overview(struct scbi_handle * hnd, enum scbi_dlg_overview_type
 }
 
 
-struct scbi_param * scbi_peek_param(struct scbi_handle * hnd)
-{
-  if (hnd->queue.first == NULL)
-    return NULL;
-  return &hnd->queue.first->param->public;
-}
-
-struct scbi_param * scbi_pop_param(struct scbi_handle * hnd)
+static inline struct scbi_param * pop_param(struct scbi_handle * hnd)
 {
   struct scbi_param_queue_entry * ret = hnd->queue.first;
   if (ret == NULL)
@@ -228,6 +221,24 @@ struct scbi_param * scbi_pop_param(struct scbi_handle * hnd)
   ret->next = hnd->queue.free;
   hnd->queue.free = ret;
   return &ret->param->public;
+}
+
+
+struct scbi_param * scbi_peek_param(struct scbi_handle * hnd)
+{
+  while (hnd->queue.first != NULL && hnd->queue.first->param->public.name == NULL)
+    pop_param(hnd);
+  if (hnd->queue.first == NULL)
+    return NULL;
+  return &hnd->queue.first->param->public;
+}
+
+struct scbi_param * scbi_pop_param(struct scbi_handle * hnd)
+{
+  struct scbi_param_queue_entry * ret = hnd->queue.first;
+  while (ret != NULL && ret->param->public.name == NULL)
+    pop_param(hnd);
+  return pop_param(hnd);
 }
 
 void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * txt, struct scbi_frame * frame)

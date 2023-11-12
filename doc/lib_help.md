@@ -131,7 +131,7 @@ There are three types of parameters:
 
 * [Statistics (overview)](#Statistical-Data-overview)
 
-Each type has its own registration function. Calling one of these functions registers a single parameter. If a registered parameters value is read from an incoming message the parameter will be reported. A parameter can only be registered once. A subsequent call of a register function for the same parameter will result in overwriting the registration information from the first call. Unregister is possible by setting entity to NULL but note that an unregistered parameter can still pop up one last time from the output queue.
+Each type has its own registration function. Calling one of these functions registers a single parameter. If a registered parameters value is read from an incoming message the parameter will be reported. A parameter can only be registered once. A subsequent call of a register function for the same parameter will result in overwriting the registration information from the first call. Unregister a parameter by calling its registration function while setting entity to NULL.
 
 #### enum **scbi_param_type**
 
@@ -165,7 +165,7 @@ Sensors are recognized as a certain type. This information is used in the regist
 - [**enum scbi_dlg_sensor_type**](#enum-scbi_dlg_sensor_type) **type**
   - the supposed sensor type
 - **const char * entity**
-  - unique parameter identifcation c-string. Parameters will reference it on output.
+  - unique parameter identifcation c-string. Parameters will reference it on output. Set to NULL to unregister.
 
 ##### Return Value
 
@@ -220,7 +220,7 @@ Relays are categorized by its mode and the associated external function.
 - [**enum scbi_dlg_relay_ext_fct**](#enum-scbi_dlg_relay_ext_func) **ext_fct**
   - the relays supposed external function.
 - **const char * entity**
-  - unique parameter identifcation c-string. Parameters will report it on output.
+  - unique parameter identifcation c-string. Parameters will report it on output. Set to NULL to unregister.
 
 ##### Return Value
 
@@ -322,7 +322,7 @@ These parameters are summarized in the CAN bus protocol as 'overview data'. They
 - [**enum scbi_dlg_overview_mode**](#enum-scbi_dlg_overview_mode) **mode**
   - the relays supposed external function.
 - **const char * entity**
-  - unique parameter identifcation c-string. Parameters will report it on output.
+  - unique parameter identifcation c-string. Parameters will report it on output. Set to NULL to unregister.
 
 ##### Return Value
 
