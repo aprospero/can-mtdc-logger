@@ -158,7 +158,7 @@ Sensors are recognized as a certain type. This information is used in the regist
 
 ##### Parameters
 
-- **[struct scbi_handle](Return-Value) * hnd**                         
+- **[struct scbi_handle](#Return-Value) * hnd**                         
   - Sorella™ instance handle
 - **size_t id**
   - zero based index with id max = [**SCBI_MAX_SENSORS**](#SCBI_MAX_SENSORS--SCBI_MAX_RELAYS)
@@ -211,13 +211,13 @@ Relays are categorized by its mode and the associated external function.
 
 ##### Parameters
 
-- **[struct scbi_handle](Return-Value) * hnd**                  
+- **[struct scbi_handle](#Return-Value) * hnd**                  
   - Sorella™ instance handle
 - **size_t id**
   - a zero based index with id max = [**SCBI_MAX_RELAYS**](#SCBI_MAX_SENSORS--SCBI_MAX_RELAYS)
 - [**enum scbi_dlg_relay_mode**](#enum-scbi_dlg_relay_mode) **mode**
   - the supposed relay mode.
-- [**enum scbi_dlg_relay_ext_fct**](#enum-scbi_dlg_relay_ext_func) **ext_fct**
+- [**enum scbi_dlg_relay_ext_func**](#enum-scbi_dlg_relay_ext_func) **ext_fct**
   - the relays supposed external function.
 - **const char * entity**
   - unique parameter identifcation c-string. Parameters will report it on output. Set to NULL to unregister.
@@ -315,7 +315,7 @@ These parameters are summarized in the CAN bus protocol as 'overview data'. They
 
 ##### Parameters
 
-- **[struct scbi_handle](Return-Value) * hnd**                     
+- **[struct scbi_handle](#Return-Value) * hnd**                     
   - Sorella™ instance handle
 - [**enum scbi_scbi_dlg_overview_type**](#enum-scbi_dlg_overview_type) **type**
 - - the requested data type.
@@ -440,7 +440,7 @@ typedef uint32_t scbi_time;
 
 ##### Parameters
 
-- **[struct scbi_handle](Return-Value) * hnd**    
+- **[struct scbi_handle](#Return-Value) * hnd**    
   - Sorella™ instance handle
 - **size_t id**
   - a zero based index with id max = [**SCBI_MAX_RELAYS**](#SCBI_MAX_SENSORS--SCBI_MAX_RELAYS)
@@ -492,7 +492,7 @@ Retrieves the next parameter from Sorellas™ output queue.
 
 ##### Parameters
 
-- **[struct scbi_handle](Return-Value) * hnd**                      
+- **[struct scbi_handle](#Return-Value) * hnd**                      
   - Sorella™ instance handle
 
 ##### Return Value
@@ -513,7 +513,7 @@ Does exactly the same as pop, but doesn't delete the parameter from Sorellas™ 
 
 ##### Parameters
 
-- **[struct scbi_handle](Return-Value) * hnd**                   
+- **[struct scbi_handle](#Return-Value) * hnd**                   
   - Sorella™ instance handle
 
 ##### Return Value
@@ -536,7 +536,7 @@ logs a data frame if a log message function was provided when calling **[scbi_in
 
 ##### Parameters
 
-- **[struct scbi_handle](Return-Value) * hnd**                      
+- **[struct scbi_handle](#Return-Value) * hnd**                      
   - Sorella™ instance handle
 - **[enum scbi_log_level](#enum-scbi_log_level) ll**
   - which loglevel should the log message get
