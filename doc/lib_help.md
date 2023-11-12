@@ -30,12 +30,12 @@ Sorella™ API provides a mechanism to register MTDC/LTDC device parameters for 
 
 ### Configuration/Initialization
 
-Setting up Sorella™ ready for work is divided in two phases.
+Setting up Sorella™ is divided in two phases.
 
-- initialization of data structures and optional declaration of a log mechanism
+- initialization of data structures and auxiliary capabilities (malloc, logging).
 - parameter registration
 
-The data structures are initialized with a call to [**scbi_init**](#scbi_init). The call gets as parameters a function for memory allocation (required) and a function for handling log output (optional). In addition, the timeout is defined for which a parameter is not repeated without a value change.
+The data structures are initialized with a call to [**scbi_init**](#function-scbi_init). The call gets as parameters a function for memory allocation (required) and a function for handling log output (optional). In addition, the timeout is defined for which a parameter is not repeated without a value change.
 
 ### At Runtime
 
@@ -55,11 +55,11 @@ Typical Sorella™ API usage can be divided in three phases
 
 ## Initialization
 
-It doesn't need much to get Sorella™ up and running. It needs some means how to allocate memory and how to emit log messages. The API defines two function pointer definitions in order to provide these.
+It ain't need a lot to get Sorella™ up and running. Provide the ability to allocate memory and optionally log messages, that's it. The API defines two function pointer definitions in order to provide those.
 
 #### typedef alloc_fn
 
-It is expected that a function of this type returns a pointer to available memory which is at least  **__size** bytes long and reserved for a Sorella™ instance. Platform specific alignment restrictions are supposed to be handled internally in the functon.
+Defines a function that is expected to return a pointer to available and reserved memory which is at least  **__size** bytes long. Platform specific alignment restrictions are supposed to be handled internally. If there is not enough memory available it should return 'zero'.
 
 ```c
 typedef  void * (* alloc_fn) (size_t __size);
@@ -67,7 +67,7 @@ typedef  void * (* alloc_fn) (size_t __size);
 
 #### typedef log_push_fn
 
-It is expected that a function of this type handles arbitrarily emitted log messages. In oder to supply information about the gravity of emitted messages Sorella™ provides a [**enum scbi_log_level**](#enum-scbi_log_level). Filtering based on log levels is supposed to be done in the external function.
+Defines a function that is expected to handle arbitrarily emitted log messages. In oder to supply information about the gravity of emitted messages Sorella™ provides a [**enum scbi_log_level**](#enum-scbi_log_level). Filtering based on log levels is supposed to be applied externally.
 
 ```c
 typedef void (* log_push_fn) (enum scbi_log_level ll, const char * format, ...);
@@ -94,6 +94,8 @@ enum scbi_log_level
 ---
 
 #### Function scbi_init
+
+Initializes Sorella™ internal data structures.
 
 ##### Parameters
 
@@ -127,7 +129,7 @@ There are three classes of parameters:
 
 * Statistics (overview)
 
-Each class has its own registration function. Calling one of these functions registers a single parameter. If a registered parameters value is parsed in an incoming message the parameter will be reported.
+Each class has its own registration function. Calling one of these functions registers a single parameter. If a registered parameters value is read from an incoming message the parameter will be reported.
 
 ### Sensors
 
@@ -142,9 +144,9 @@ Sensors are recognized as a certain type. This information is used in the regist
 - **size_t id**
   - zero based index with id max = [**SCBI_MAX_SENSORS**](#SCBI_MAX_SENSORS-/-SCBI_MAX_RELAYS)
 - [**enum scbi_dlg_sensor_type**](#enum-scbi_dlg_sensor_type) **type**
-  - the supposed sensor type (an invalid type maps automatically to **DST_UNKNOWN**).
+  - the supposed sensor type
 - **const char * entity**
-  - unique parameter identifcation c-string. Parameters will report it on output.
+  - unique parameter identifcation c-string. Parameters will report reference it on output.
 
 ##### Return Value
 
