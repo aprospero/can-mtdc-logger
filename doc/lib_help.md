@@ -431,8 +431,7 @@ typedef uint32_t scbi_time;
 
 ##### Return Value
 
-- **int**    
-  
+- **int**
   -  zero on success, nonzero on fail - to date Sorella™ only supports single extended CAN frame messages. Bulk messages may cause a nonzero return.
 
 ```c
@@ -450,11 +449,12 @@ Contains data for a parameter of the MTDC/LTDC.
 
 ###### Member
 
-- **[enum scbi_param_type](#enum-scbi_param_type)** **type** - the device feature type the parameter belongs to
-
-- const char * **name** - the name that was used upon registration.
-
-- int32_t **value** - the actual parameter value - unit and division is defined intrinsically
+- **[enum scbi_param_type](#enum-scbi_param_type)** **type** 
+  - the device feature type the parameter belongs to
+- const char * **name** 
+  - the name that was used upon registration.
+- int32_t **value** 
+  - the actual parameter value - unit and division is defined intrinsically
 
 ```c
 struct scbi_param
