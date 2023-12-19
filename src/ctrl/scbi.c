@@ -144,6 +144,8 @@ static inline int update_relay(struct scbi_handle * hnd, scbi_time recvd, enum s
     efct -= DRE_DISABLED - (DRE_COUNT - 2);
   if (mode >= DRM_COUNT || efct >= DRE_COUNT || id >= SCBI_MAX_RELAYS)
     return -1;
+  if (mode == DRM_RELAYMODE_PWM && value == 0xFF) /* it seems that MDTCv5 sends 0xFF for flushing ie. max power. */
+    value = 100;
   return update_param(hnd, recvd, &hnd->param.relay[mode][efct][id], value);
 }
 
