@@ -18,11 +18,11 @@ Already accomplished:
 
 * standalone [Sorella™](./lib_help.md) library with a low footprint regarding prerequisites. If no linux environment is present a compatibility header provides necessary definitions.
 
-* Linux compatible [application](./tool_help.md) to publish SCBI parameters to a mosquitto mqtt broker.
+* Linux compatible [application](./tool_help.md) to publish MTDC/LTDC parameters to a mosquitto mqtt broker.
 
 Yet to accomplish:
 
-* SCBI library (see the API docs)
+* Sorella™ library (see the API docs)
   
   * implement evaluation of still unsupported messages
   
