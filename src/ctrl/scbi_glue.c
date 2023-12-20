@@ -18,11 +18,10 @@
 
 struct scbi_glue_handle
 {
-  int                        soc;
-  int                        read_can_port;
-  struct mqtt_handle *       broker;
-  struct scbi_handle *       scbi;
-  struct timeval             start;
+  int                  soc;
+  struct mqtt_handle * broker;
+  struct scbi_handle * scbi;
+  struct timeval       start;
 };
 
 static const char * param_type_translate[] = {
@@ -53,7 +52,7 @@ void scbi_glue_log(enum scbi_log_level scbi_ll, const char * format, ...)
 }
 
 
-struct scbi_glue_handle * scbi_glue_init (struct scbi_handle * scbi_hnd, const char *port, void * broker)
+struct scbi_glue_handle * scbi_glue_create (struct scbi_handle * scbi_hnd, const char *port, void * broker)
 {
   struct ifreq ifr;
   struct sockaddr_can addr;
@@ -65,15 +64,15 @@ struct scbi_glue_handle * scbi_glue_init (struct scbi_handle * scbi_hnd, const c
 
   if (hnd == NULL)
   {
-    LG_CRITICAL("Could not alocate ressources for Sorel CAN Msg parser.");
+    LG_CRITICAL("Could not allocate ressources for Sorel CAN Msg parser.");
     return NULL;
   }
 
-  hnd->soc = socket (PF_CAN, SOCK_RAW, CAN_RAW);
+  hnd->soc = socket(PF_CAN, SOCK_RAW, CAN_RAW);
   if (hnd->soc < 0)
   {
     LG_CRITICAL("Could not open CAN interface. Error: %s", strerror(errno));
-    free(hnd);
+    scbi_glue_destroy(hnd);
     return NULL;
   }
 
@@ -82,7 +81,7 @@ struct scbi_glue_handle * scbi_glue_init (struct scbi_handle * scbi_hnd, const c
   if (ioctl (hnd->soc, SIOCGIFINDEX, &ifr) < 0)
   {
     LG_CRITICAL("Could not address CAN interface. Error: %s", strerror(errno));
-    free(hnd);
+    scbi_glue_destroy(hnd);
     return NULL;
   }
   addr.can_ifindex = ifr.ifr_ifindex;
@@ -90,7 +89,7 @@ struct scbi_glue_handle * scbi_glue_init (struct scbi_handle * scbi_hnd, const c
   if (bind (hnd->soc, (struct sockaddr*) &addr, sizeof(addr)) < 0)
   {
     LG_CRITICAL("Could not bind to CAN interface. Error: %s", strerror(errno));
-    free(hnd);
+    scbi_glue_destroy(hnd);
     return NULL;
   }
   hnd->broker = broker;
@@ -106,63 +105,59 @@ void scbi_glue_update (struct scbi_glue_handle * hnd)
   union scbi_address_id * addi = (union scbi_address_id *) &frame.msg.can_id;
   struct scbi_param *     param;
   int                     rx;
+  struct timeval timeout = { 1, 0 };
+  fd_set readSet;
 
-  hnd->read_can_port = 1;
-
-  while (hnd->read_can_port)
+  FD_ZERO(&readSet);
+  FD_SET(hnd->soc, &readSet);
+  if (select ((hnd->soc + 1), &readSet, NULL, NULL, &timeout) >= 0)
   {
-    struct timeval timeout = { 1, 0 };
-    fd_set readSet;
-    FD_ZERO(&readSet);
-    FD_SET(hnd->soc, &readSet);
-    if (select ((hnd->soc + 1), &readSet, NULL, NULL, &timeout) >= 0)
+    if (FD_ISSET(hnd->soc, &readSet))
     {
-      if (!hnd->read_can_port)
+      rx = read (hnd->soc, &frame.msg, sizeof(frame.msg));
+      if (rx < 0)
       {
-        break;
+        LG_ERROR("Reading CAN Bus: Posix Error (%i) '%s'.\n", errno, strerror(errno));
+        return;
       }
-      if (FD_ISSET(hnd->soc, &readSet))
+
+      if ((unsigned int) rx < sizeof(struct can_frame))
       {
-        rx = read (hnd->soc, &frame.msg, sizeof(frame.msg));
-        if (rx < 0)
-        {
-          LG_ERROR("Reading CAN Bus: Posix Error (%i) '%s'.\n", errno, strerror(errno));
-          continue;
-        }
+        scbi_print_frame (hnd->scbi, SCBI_LL_ERROR, "FRAME", "too short", &frame);
+        return;
+      }
 
-        if ((unsigned int) rx < sizeof(struct can_frame))
-        {
-          scbi_print_frame (hnd->scbi, SCBI_LL_ERROR, "FRAME", "too short", &frame);
-          continue;
-        }
+      /* get the timestamp for the received message */
+      ioctl(hnd->soc, SIOCGSTAMP, &tstamp);
+      timersub(&tstamp, &hnd->start, &tstamp);
+      frame.recvd = (tstamp.tv_sec * 1000) + (tstamp.tv_usec / 1000);
 
-        /* get the timestamp for the received message */
-        ioctl(hnd->soc, SIOCGSTAMP, &tstamp);
-        timersub(&tstamp, &hnd->start, &tstamp);
-        frame.recvd = (tstamp.tv_sec * 1000) + (tstamp.tv_usec / 1000);
-
-        if (addi->scbi_id.msg == CAN_MSG_ERROR || addi->scbi_id.flg_err)
-          scbi_print_frame (hnd->scbi, SCBI_LL_ERROR, "FRAME", "Frame Error", &frame);
-        else
+      if (addi->scbi_id.msg == CAN_MSG_ERROR || addi->scbi_id.flg_err)
+        scbi_print_frame (hnd->scbi, SCBI_LL_ERROR, "FRAME", "Frame Error", &frame);
+      else
+      {
+        scbi_print_frame (hnd->scbi, SCBI_LL_DEBUG, "FRAME", "Msg", &frame);
+        scbi_parse(hnd->scbi, &frame);
+        while ((param = scbi_pop_param(hnd->scbi)) != NULL)
         {
-          scbi_print_frame (hnd->scbi, SCBI_LL_DEBUG, "FRAME", "Msg", &frame);
-          scbi_parse(hnd->scbi, &frame);
-          param = scbi_pop_param(hnd->scbi);
-          if (param && param->type < SCBI_PARAM_TYPE_COUNT)
+          if (param->type < SCBI_PARAM_TYPE_COUNT)
             mqtt_publish(hnd->broker, param_type_translate[param->type], param->name, param->value);
         }
-        fflush (stdout);
-        fflush (stderr);
       }
+      fflush (stdout);
+      fflush (stderr);
     }
-
     if (hnd->broker != NULL)
-      mqtt_loop(hnd->broker, -1);
+      mqtt_loop(hnd->broker, 0);
   }
 }
 
-int scbi_glue_close (struct scbi_glue_handle *hnd)
+void scbi_glue_destroy(struct scbi_glue_handle * hnd)
 {
-  close (hnd->soc);
-  return 0;
+  if (hnd)
+  {
+    if (hnd->soc)
+      close(hnd->soc);
+    free(hnd);
+  }
 }

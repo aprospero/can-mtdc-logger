@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "ctrl/scbi_glue.h"
 #include "ctrl/com/mqtt.h"
@@ -10,19 +11,23 @@
 #include "args.h"
 #include "version.h"
 
+#define SCBI_REPOST_TIMEOUT_SEC 300 // doublette values are blocked from propagation for 5min.
+
+int do_run = TRUE;
 
 void clean_exit_on_sig(int sig_num)
 {
-  LG_CRITICAL("Signal %d received", sig_num);
-  exit(0);
+  LG_CRITICAL("Signal %d received.", sig_num);
+  do_run = FALSE;
 }
 
 int main(int argc, char * argv[])
 {
-  struct cansorella_config config;
-  struct mqtt_handle * mqtt;
-  struct scbi_glue_handle * scbi_glue;
-  struct scbi_handle * scbi;
+  struct cansorella_config  config;
+  struct mqtt_handle *      mqtt      = NULL;
+  struct scbi_handle *      scbi      = NULL;
+  struct scbi_glue_handle * scbi_glue = NULL;
+  int do_log = TRUE;
 
   parseArgs(argc, argv, &config);
 
@@ -39,11 +44,19 @@ int main(int argc, char * argv[])
   signal(SIGTERM, clean_exit_on_sig);
   signal(SIGPIPE, SIG_IGN);
 
-  mqtt = mqtt_init(&config.mqtt);
+  while(do_run && mqtt_init(&mqtt, &config.mqtt) == MQTT_RET_RETRY)
+  {
+    if (do_log)
+    {
+      LG_WARN("MQTT - Could not connect to broker. Syscall returned '%s'. Retry every 5 sec.", strerror(errno));
+      do_log = FALSE;
+    }
+    sleep(5);
+  }
+
   if (mqtt)
   {
-    scbi = scbi_init(malloc, scbi_glue_log, 300);
-    scbi_glue = scbi_glue_init(scbi, config.can_device, mqtt);
+    scbi = scbi_init(malloc, scbi_glue_log, SCBI_REPOST_TIMEOUT_SEC);
     if (scbi)
     {
       scbi_register_sensor(scbi, 0, DST_UNDEFINED, "collector");
@@ -81,10 +94,16 @@ int main(int argc, char * argv[])
       scbi_register_overview(scbi, DOT_UNKNOWN09, DOM_01, "unknown091");
       scbi_register_overview(scbi, DOT_UNKNOWN09, DOM_02, "unknown092");
 
-      scbi_glue_update(scbi_glue);
-      scbi_glue_close(scbi_glue);
+      scbi_glue = scbi_glue_create(scbi, config.can_device, mqtt);
+      if (scbi_glue)
+      {
+        while (do_run)
+          scbi_glue_update(scbi_glue);
+        scbi_glue_destroy(scbi_glue);
+      }
+      free(scbi);
     }
     mqtt_close(mqtt);
   }
-	return 0;
+  return 0;
 }
