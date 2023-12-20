@@ -264,7 +264,7 @@ void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const c
 
 /* Helper fcts. */
 
-static void scbi_compute_datalogger (struct scbi_handle * hnd, struct scbi_frame * frame)
+static void scbi_parse_datalogger (struct scbi_handle * hnd, struct scbi_frame * frame)
 {
   union scbi_address_id *adid = (union scbi_address_id*) &frame->msg.can_id;
   union scbi_msg_content *msg = (union scbi_msg_content*) &frame->msg.data[0];
@@ -311,7 +311,7 @@ static void scbi_compute_datalogger (struct scbi_handle * hnd, struct scbi_frame
   }
 }
 
-static void scbi_compute_controller (struct scbi_handle *hnd, struct scbi_frame * frame)
+static void scbi_parse_controller (struct scbi_handle *hnd, struct scbi_frame * frame)
 {
   union scbi_address_id *adid = (union scbi_address_id*) &frame->msg.can_id;
   union scbi_msg_content *msg = (union scbi_msg_content*) &frame->msg.data[0];
@@ -350,7 +350,7 @@ static void scbi_compute_controller (struct scbi_handle *hnd, struct scbi_frame 
   }
 }
 
-static void scbi_compute_hcc (struct scbi_handle *hnd, struct scbi_frame * frame)
+static void scbi_parse_hcc (struct scbi_handle *hnd, struct scbi_frame * frame)
 {
   union scbi_address_id *adid = (union scbi_address_id*) &frame->msg.can_id;
   union scbi_msg_content *msg = (union scbi_msg_content*) &frame->msg.data[0];
@@ -404,19 +404,19 @@ static void scbi_compute_hcc (struct scbi_handle *hnd, struct scbi_frame * frame
   }
 }
 
-static void scbi_compute_format0 (struct scbi_handle * hnd, struct scbi_frame * frame)
+static void scbi_parse_format0 (struct scbi_handle * hnd, struct scbi_frame * frame)
 {
   union scbi_address_id *adid = (union scbi_address_id*) &frame->msg.can_id;
   switch (adid->scbi_id.prog)
   {
     case PRG_CONTROLLER:
-      scbi_compute_controller (hnd, frame);
+      scbi_parse_controller (hnd, frame);
       break;
     case PRG_DATALOGGER_MONITOR:
-      scbi_compute_datalogger (hnd, frame);
+      scbi_parse_datalogger (hnd, frame);
       break;
     case PRG_HCC:
-      scbi_compute_hcc(hnd, frame);
+      scbi_parse_hcc(hnd, frame);
       break;
     case PRG_REMOTESENSOR:
     case PRG_DATALOGGER_NAMEDSENSORS:
@@ -441,7 +441,7 @@ int scbi_parse(struct scbi_handle * hnd, struct scbi_frame * frame)
 
   if (adid->scbi_id.prot == CAN_PROTO_FORMAT_0)
   { /* CAN Msgs size <= 8 */
-    scbi_compute_format0 (hnd, frame);
+    scbi_parse_format0 (hnd, frame);
     return 0;
   }
   return -1;
