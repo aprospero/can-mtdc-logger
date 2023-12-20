@@ -102,7 +102,6 @@ void scbi_glue_update (struct scbi_glue_handle * hnd)
 {
   struct scbi_frame       frame;
   struct timeval          tstamp;
-  union scbi_address_id * addi = (union scbi_address_id *) &frame.msg.can_id;
   struct scbi_param *     param;
   int                     rx;
   struct timeval timeout = { 1, 0 };
@@ -132,12 +131,8 @@ void scbi_glue_update (struct scbi_glue_handle * hnd)
       timersub(&tstamp, &hnd->start, &tstamp);
       frame.recvd = (tstamp.tv_sec * 1000) + (tstamp.tv_usec / 1000);
 
-      if (addi->scbi_id.msg == CAN_MSG_ERROR || addi->scbi_id.flg_err)
-        scbi_print_frame (hnd->scbi, SCBI_LL_ERROR, "FRAME", "Frame Error", &frame);
-      else
+      if (scbi_parse(hnd->scbi, &frame) == 0)
       {
-        scbi_print_frame (hnd->scbi, SCBI_LL_DEBUG, "FRAME", "Msg", &frame);
-        scbi_parse(hnd->scbi, &frame);
         while ((param = scbi_pop_param(hnd->scbi)) != NULL)
         {
           if (param->type < SCBI_PARAM_TYPE_COUNT)

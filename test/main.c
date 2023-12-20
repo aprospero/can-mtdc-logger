@@ -1,11 +1,8 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdarg.h>
-//#include <stddef.h>
-//#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <signal.h>
 
 #include "ctrl/scbi_api.h"
 #include "version.h"
@@ -76,10 +73,12 @@ static void parse_file(struct scbi_handle * hnd, const char * fname)
   {
     memset(&frame, 0, sizeof frame);
     parse_line(&frame, line, &cum);
-    scbi_print_frame(hnd, SCBI_LL_INFO, "TEST", "TOAST", &frame);
-    scbi_parse(hnd,  &frame);
-    while ((param = scbi_pop_param(hnd)) != NULL)
-      printf("Name: %s,   type: %s,  value: %u.\n", param->name, param_type_translate[param->type], param->value);
+//    scbi_print_frame(hnd, SCBI_LL_INFO, "TEST", "TOAST", &frame);
+    if (scbi_parse(hnd,  &frame) == 0)
+    {
+      while ((param = scbi_pop_param(hnd)) != NULL)
+        printf("Name: %s,   type: %s,  value: %u.\n", param->name, param_type_translate[param->type], param->value);
+    }
   }
   fclose(fp);
 }

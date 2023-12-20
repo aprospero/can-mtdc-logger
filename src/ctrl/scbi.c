@@ -439,10 +439,16 @@ int scbi_parse(struct scbi_handle * hnd, struct scbi_frame * frame)
   union scbi_address_id *  adid = (union scbi_address_id *) &frame->msg.can_id;
   hnd->now = frame->recvd;
 
-  if (adid->scbi_id.prot == CAN_PROTO_FORMAT_0)
-  { /* CAN Msgs size <= 8 */
-    scbi_parse_format0 (hnd, frame);
-    return 0;
+  if (adid->scbi_id.msg == CAN_MSG_ERROR || adid->scbi_id.flg_err)
+    scbi_print_frame (hnd, SCBI_LL_ERROR, "FRAME", "Frame Error", frame);
+  else
+  {
+    scbi_print_frame (hnd, SCBI_LL_DEBUG, "FRAME", "Msg", frame);
+    if (adid->scbi_id.prot == CAN_PROTO_FORMAT_0)
+    { /* CAN Msgs size <= 8 */
+      scbi_parse_format0 (hnd, frame);
+      return 0;
+    }
   }
   return -1;
 }
