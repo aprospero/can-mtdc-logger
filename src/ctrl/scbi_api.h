@@ -1,17 +1,15 @@
 #ifndef _CTRL_SCBI_API_H
 #define _CTRL_SCBI_API_H
 
-#ifndef SCBI_NO_LINUX_SUPPORT
+#include "scbi_config.h"
+
+#ifdef SCBI_LINUX_SUPPORT
   #include <stdint.h>
   #include <stddef.h>
   #include <linux/can.h>
 #else
   #include "scbi_compat.h"
-#endif  // SCBI_NO_LINUX_SUPPORT
-
-// device featureset
-#define SCBI_MAX_SENSORS 4
-#define SCBI_MAX_RELAYS  2
+#endif  // SCBI_LINUX_SUPPORT
 
 // timestamp in ms, overflowing at SCBI_TIME_MAX
 typedef uint32_t scbi_time;
