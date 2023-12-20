@@ -31,10 +31,7 @@ struct scbi_param_queue {
 
 
 struct scbi_handle {
-  struct {
-    alloc_fn         alloc;
-    log_push_fn      log_push;
-  } fn;
+  log_push_fn             log_push;
   uint32_t                repost_timeout_s;
   scbi_time               now;
   struct scbi_params      param;
@@ -44,11 +41,11 @@ struct scbi_handle {
 #define BYTE2TEMP(x) ((uint8_t) (((uint16_t) (x) * 100) / 255))
 #define TEMP2BYTE(x) ((unit8_t) (((uint16_t) (x) * 255) / 100))
 
-#define LG_DEBUG(FORMAT, ...) if (hnd->fn.log_push) hnd->fn.log_push(SCBI_LL_DEBUG, FORMAT, ##__VA_ARGS__)
-#define LG_INFO(FORMAT, ... ) if (hnd->fn.log_push) hnd->fn.log_push(SCBI_LL_INFO, FORMAT, ##__VA_ARGS__)
-#define LG_WARN(FORMAT, ...) if (hnd->fn.log_push) hnd->fn.log_push(SCBI_LL_WARN, FORMAT, ##__VA_ARGS__)
-#define LG_ERROR(FORMAT, ...) if (hnd->fn.log_push) hnd->fn.log_push(SCBI_LL_ERROR, FORMAT, ##__VA_ARGS__)
-#define LG_CRITICAL(FORMAT, ...) if (hnd->fn.log_push) hnd->fn.log_push(SCBI_LL_CRITICAL, FORMAT, ##__VA_ARGS__)
+#define LG_DEBUG(FORMAT, ...) if (hnd->log_push) hnd->log_push(SCBI_LL_DEBUG, FORMAT, ##__VA_ARGS__)
+#define LG_INFO(FORMAT, ... ) if (hnd->log_push) hnd->log_push(SCBI_LL_INFO, FORMAT, ##__VA_ARGS__)
+#define LG_WARN(FORMAT, ...) if (hnd->log_push) hnd->log_push(SCBI_LL_WARN, FORMAT, ##__VA_ARGS__)
+#define LG_ERROR(FORMAT, ...) if (hnd->log_push) hnd->log_push(SCBI_LL_ERROR, FORMAT, ##__VA_ARGS__)
+#define LG_CRITICAL(FORMAT, ...) if (hnd->log_push) hnd->log_push(SCBI_LL_CRITICAL, FORMAT, ##__VA_ARGS__)
 
 
 /* global helper fcts */
@@ -171,8 +168,7 @@ struct scbi_handle * scbi_init(alloc_fn alloc, log_push_fn log_push, uint32_t re
     for (int i = 0; i < SCBI_PARAM_MAX_ENTRIES - 1; i++)
       hnd->queue.pool[i].next = &hnd->queue.pool[i + 1];
     hnd->queue.free = &hnd->queue.pool[0];
-    hnd->fn.alloc = alloc;
-    hnd->fn.log_push = log_push;
+    hnd->log_push = log_push;
     hnd->repost_timeout_s = repost_timeout_s;
   }
   return hnd;
@@ -246,8 +242,8 @@ struct scbi_param * scbi_pop_param(struct scbi_handle * hnd)
 void scbi_print_frame (struct scbi_handle * hnd, enum scbi_log_level ll, const char * msg_type, const char * txt, struct scbi_frame * frame)
 {
   union scbi_address_id *adid = (union scbi_address_id*) &frame->msg.can_id;
-  if (hnd->fn.log_push) {
-    hnd->fn.log_push(ll, "(%s) %s: % 6ums CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data:%s.",
+  if (hnd->log_push) {
+    hnd->log_push(ll, "(%s) %s: % 6ums CAN-ID 0x%08X (prg:%02X, id:%02X, func:%02X, prot:%02X, msg:%02X%s%s%s) [%u] data:%s.",
                   msg_type, txt == NULL ? "" : txt, frame->recvd, adid->address_id,
                   adid->scbi_id.prog, adid->scbi_id.client, adid->scbi_id.func, adid->scbi_id.prot, adid->scbi_id.msg,
                   adid->scbi_id.flg_err ? " ERR" : " ---", adid->scbi_id.flg_eff ? "-EFF" : "----", adid->scbi_id.flg_rtr ? "-RTR" : "----",
@@ -287,18 +283,18 @@ static void scbi_compute_datalogger (struct scbi_handle * hnd, struct scbi_frame
       {
         case DLF_SENSOR:
           ret = update_sensor(hnd, frame->recvd, msg->dlg.sensor.type, msg->dlg.sensor.id,  msg->dlg.sensor.value);
-          if (hnd->fn.log_push)
-            hnd->fn.log_push(ret ? SCBI_LL_ERROR : SCBI_LL_DEBUG, "SENSOR%u (%u) -> %d (%s).", msg->dlg.sensor.id, msg->dlg.sensor.type, msg->dlg.sensor.value, format_scbi_frame_data(frame));
+          if (hnd->log_push)
+            hnd->log_push(ret ? SCBI_LL_ERROR : SCBI_LL_DEBUG, "SENSOR%u (%u) -> %d (%s).", msg->dlg.sensor.id, msg->dlg.sensor.type, msg->dlg.sensor.value, format_scbi_frame_data(frame));
           break;
         case DLF_RELAY:
           ret = update_relay(hnd, frame->recvd, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.id, msg->dlg.relay.value);
-          if (hnd->fn.log_push)
-            hnd->fn.log_push(ret ? SCBI_LL_ERROR : SCBI_LL_DEBUG, "RELAY%u (%u/%u) -> %u (%s).", msg->dlg.relay.id, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.value, format_scbi_frame_data(frame));
+          if (hnd->log_push)
+            hnd->log_push(ret ? SCBI_LL_ERROR : SCBI_LL_DEBUG, "RELAY%u (%u/%u) -> %u (%s).", msg->dlg.relay.id, msg->dlg.relay.mode, msg->dlg.relay.exfunc[0], msg->dlg.relay.value, format_scbi_frame_data(frame));
           break;
         case DLG_OVERVIEW:
           ret = update_overview(hnd, frame->recvd, msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.relay.value);
-          if (hnd->fn.log_push)
-            hnd->fn.log_push(ret ? SCBI_LL_ERROR : SCBI_LL_DEBUG, "overview %u-%u -> %uh/%ukWh. - (%s)", msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.oview.hours, msg->dlg.oview.heat_yield, format_scbi_frame_data(frame));
+          if (hnd->log_push)
+            hnd->log_push(ret ? SCBI_LL_ERROR : SCBI_LL_DEBUG, "overview %u-%u -> %uh/%ukWh. - (%s)", msg->dlg.oview.type, msg->dlg.oview.mode, msg->dlg.oview.hours, msg->dlg.oview.heat_yield, format_scbi_frame_data(frame));
 
           break;
         case DLF_UNDEFINED:
