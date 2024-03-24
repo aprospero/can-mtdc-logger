@@ -10,6 +10,6 @@
 
 // device featureset (defaults for Sorel MTDCv5)
 #define SCBI_MAX_SENSORS 4
-#define SCBI_MAX_REALYS 2
+#define SCBI_MAX_RELAYS 2
 
 #endif  // _CTRL_SCBI_CONFIG_H
