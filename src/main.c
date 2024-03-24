@@ -61,6 +61,8 @@ int main(int argc, char * argv[])
     {
       scbi_register_sensor(scbi, 0, DST_UNDEFINED, "collector");
       scbi_register_sensor(scbi, 1, DST_UNDEFINED, "storage");
+      scbi_register_sensor(scbi, 2, DST_UNDEFINED, "vl");
+      scbi_register_sensor(scbi, 3, DST_UNDEFINED, "storage_low");
 
       scbi_register_relay(scbi, 0, DRM_RELAYMODE_SWITCHED, DRE_UNSELECTED, "pump_on");
       scbi_register_relay(scbi, 2, DRM_RELAYMODE_PWM     , DRE_UNSELECTED, "pump");
