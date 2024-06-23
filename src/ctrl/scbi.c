@@ -154,6 +154,18 @@ static inline int update_overview(struct scbi_handle * hnd, scbi_time recvd, enu
 }
 
 
+static void init_queue(struct scbi_handle * hnd) {
+  for (int i = 0; i < SCBI_PARAM_MAX_ENTRIES - 1; i++) {
+    hnd->queue.pool[i].next = &hnd->queue.pool[i + 1];
+    if (hnd->queue.pool[i].param) {
+      hnd->queue.pool[i].param->in_queue = 0;
+      hnd->queue.pool[i].param = NULL;
+    }
+  }
+  hnd->queue.free = &hnd->queue.pool[0];
+}
+
+
 
 
 /* public functions */
@@ -165,9 +177,7 @@ struct scbi_handle * scbi_init(alloc_fn alloc, log_push_fn log_push, uint32_t re
   {
     for (int i = 0; i < sizeof(struct scbi_handle); i++)
       ((uint8_t *) hnd)[i] = 0;
-    for (int i = 0; i < SCBI_PARAM_MAX_ENTRIES - 1; i++)
-      hnd->queue.pool[i].next = &hnd->queue.pool[i + 1];
-    hnd->queue.free = &hnd->queue.pool[0];
+    init_queue(hnd);
     hnd->log_push = log_push;
     hnd->repost_timeout_s = repost_timeout_s;
   }
@@ -215,6 +225,14 @@ static inline struct scbi_param * pop_param(struct scbi_handle * hnd)
   if (ret == NULL)
     return NULL;
   hnd->queue.first = hnd->queue.first->next;
+  if (hnd->queue.last == ret) {
+    if (hnd->queue.first != NULL) {
+      LG_CRITICAL("Param Queue broken, re-Init!");
+      init_queue(hnd);
+      return &ret->param->public;
+    }
+    hnd->queue.last = NULL;
+  }
   ret->param->in_queue = 0;
   ret->next = hnd->queue.free;
   hnd->queue.free = ret;
