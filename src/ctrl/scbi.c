@@ -130,8 +130,10 @@ static inline int update_param(struct scbi_handle * hnd, scbi_time recvd, struct
 
 static inline int update_sensor(struct scbi_handle * hnd, scbi_time recvd, enum scbi_dlg_sensor_type type, size_t id, int32_t value)
 {
-  if (type >= DST_COUNT || id >= SCBI_MAX_SENSORS)
+  if (type >= DST_COUNT)
     return -1;
+  if (id >= SCBI_MAX_SENSORS)
+    return 0;
   return update_param(hnd, recvd, &hnd->param.sensor[type][id], value);
 }
 
@@ -139,8 +141,10 @@ static inline int update_relay(struct scbi_handle * hnd, scbi_time recvd, enum s
 {
   if (efct == DRE_DISABLED || efct == DRE_UNSELECTED) /* last two extfuncts (0xFE & 0XFF) are wrapped to the end of the map */
     efct -= DRE_DISABLED - (DRE_COUNT - 2);
-  if (mode >= DRM_COUNT || efct >= DRE_COUNT || id >= SCBI_MAX_RELAYS)
+  if (mode >= DRM_COUNT || efct >= DRE_COUNT)
     return -1;
+  if (id >= SCBI_MAX_RELAYS)
+    return 0;
   if (mode == DRM_RELAYMODE_PWM && value == 0xFF) /* it seems that MDTCv5 sends 0xFF for flushing ie. max power. */
     value = 100;
   return update_param(hnd, recvd, &hnd->param.relay[mode][efct][id], value);
