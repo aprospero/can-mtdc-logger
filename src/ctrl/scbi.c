@@ -145,7 +145,7 @@ static inline int update_relay(struct scbi_handle * hnd, scbi_time recvd, enum s
     return -1;
   if (id >= SCBI_MAX_RELAYS)
     return 0;
-  if (mode == DRM_RELAYMODE_PWM && value == 0xFF) /* it seems that MDTCv5 sends 0xFF for flushing ie. max power. */
+  if (mode == DRM_RELAYMODE_SWITCHED && value > 100) /* we limit relay output to 100 in order to use it as percentage value. (PWM flushing is represented raw as 0xFF)*/
     value = 100;
   return update_param(hnd, recvd, &hnd->param.relay[mode][efct][id], value);
 }
