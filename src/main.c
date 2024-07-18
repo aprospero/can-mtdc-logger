@@ -23,7 +23,7 @@ void clean_exit_on_sig(int sig_num)
 
 int main(int argc, char * argv[])
 {
-  struct cansorella_config  config;
+  struct cansorella_config  config    = {0};
   struct mqtt_handle *      mqtt      = NULL;
   struct scbi_handle *      scbi      = NULL;
   struct scbi_glue_handle * scbi_glue = NULL;
