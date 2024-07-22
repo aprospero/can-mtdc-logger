@@ -53,7 +53,7 @@ My personal setup is the following:
     * influxdb (time series database engine)
     * grafana (browser based dashboard creation)
 
-This setup is one of many was to go ahead. It is eg. possible to fire up an Arduino or Raspberry PI with CAN support and just use the SCBI library or - in case of Linux use the Linux application in conjunction with an installed mosquitto instance.
+This setup is one of many ways to go ahead. It is eg. possible to fire up an Arduino or Raspberry PI with CAN support and just use the SCBI library or - in case of Linux use the Linux application in conjunction with an installed mosquitto instance.
 
 # How my setup works
 
