@@ -91,7 +91,7 @@ int main(int argc, char * argv[])
   const char * fname = argc > 1 ? argv[1] : "../dumps/can0.log";
 
   fprintf(stdout, "##########################################################################\n");
-  fprintf(stdout, "Starting %s "APP_VERSION" - Input file:%s.\n", argv[0], fname);
+  fprintf(stdout, "Starting %s " APP_VERSION " - Input file:%s.\n", argv[0], fname);
   fprintf(stdout, "##########################################################################\n");
 
   scbi = scbi_init(malloc, log_fn, 300);
