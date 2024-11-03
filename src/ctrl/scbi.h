@@ -97,9 +97,9 @@ struct scbi_ctr_identity_msg  /* SubscriberID.CFG_DEVICE_ID.CFG_OEM_ID.CFG_DEVIC
 struct scbi_dlg_sensor_msg
 {
   uint8_t  id;
-  int16_t  value;
-  uint8_t  type;
-  uint8_t  subtype;
+  int32_t  value;
+  uint8_t  type;       // optional
+  uint8_t  subtype;    // optional
 } __attribute__((packed));
 
 // message definition for relay data

@@ -41,10 +41,10 @@ struct scbi_param
 
 enum scbi_dlg_sensor_type
 {
-  DST_UNKNOWN          = 0x00,
-  DST_FLOW             = 0x01,           // (VFS SENSOR)
-  DST_RELPRESSURE      = 0x02,           // (RPS SENSOR)
-  DST_DIFFPRESSURE     = 0x03,           // (DPS SENSOR)
+  DST_UNKNOWN          = 0x00,  // default
+  DST_FLOW             = 0x01,  // (VFS SENSOR)
+  DST_RELPRESSURE      = 0x02,  // (RPS SENSOR)
+  DST_DIFFPRESSURE     = 0x03,  // (DPS SENSOR)
   DST_TEMPERATURE      = 0x04,
   DST_HUMIDIDY         = 0x05,
   DST_ROOM_CTRL_WHEEL  = 0x06,

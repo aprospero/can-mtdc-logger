@@ -50,8 +50,8 @@ struct scbi_handle {
 
 /* global helper fcts */
 
-#define BYTE_FORMAT_PRINT_LEN 3 // 2 hex digits + 1 whitespace
-#define BYTE_FORMAT_COUNT 64    // max amount of bytes in resulting formatted string
+#define BYTE_FORMAT_PRINT_LEN 3        // 2 hex digits + 1 whitespace
+#define BYTE_FORMAT_COUNT CAN_MAX_DLEN // max amount of bytes in resulting formatted string
 
 
 /* print uint8_t data in hex */
@@ -59,7 +59,7 @@ static const char * format_scbi_frame_data (const struct scbi_frame * frame)
 {
   static const char hexmap[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
   static char xf[BYTE_FORMAT_COUNT * BYTE_FORMAT_PRINT_LEN + 1] = "";
-  int cnt = frame->msg.can_dlc;
+  int cnt = frame->msg.len;
 
   if (cnt > BYTE_FORMAT_COUNT)
     cnt = BYTE_FORMAT_COUNT;
@@ -304,6 +304,8 @@ static void scbi_parse_datalogger (struct scbi_handle * hnd, struct scbi_frame *
       switch (adid->scbi_id.func)
       {
         case DLF_SENSOR:
+          if (frame->msg.len <= offsetof(struct scbi_dlg_sensor_msg, type))
+            msg->dlg.sensor.type = DST_UNKNOWN;
           ret = update_sensor(hnd, frame->recvd, msg->dlg.sensor.type, msg->dlg.sensor.id,  msg->dlg.sensor.value);
           if (hnd->log_push)
             hnd->log_push(ret ? SCBI_LL_ERROR : SCBI_LL_DEBUG, "SENSOR%u (%u) -> %d (%s).", msg->dlg.sensor.id, msg->dlg.sensor.type, msg->dlg.sensor.value, format_scbi_frame_data(frame));
